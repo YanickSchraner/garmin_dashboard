@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Build core Garmin data fetcher and dashboard shell**
+- [x] **Track: Build core Garmin data fetcher and dashboard shell**
   *Link: [./tracks/garmin_dashboard_20260222/](./tracks/garmin_dashboard_20260222/)*

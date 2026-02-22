@@ -5,7 +5,7 @@
     - [ ] Create `tests/test_garmin_fetcher.py`.
     - [ ] Define tests for Garmin API authentication.
     - [ ] Define tests for activity data retrieval.
-- [ ] **Task: Implement Garmin Data Fetcher**
+- [x] **Task: Implement Garmin Data Fetcher** (commit: 528de22)
     - [ ] Implement `GarminFetcher` class to handle API requests.
     - [ ] Integrate authentication using Garmin Connect credentials.
     - [ ] Add endpoints to FastAPI to expose fetched data.

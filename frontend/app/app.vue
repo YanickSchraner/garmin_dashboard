@@ -35,7 +35,32 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&display=swap');
 
+/* Light mode (default) */
 :root {
+  --bg:           #F5F1EC;
+  --surface:      #FFFFFF;
+  --raised:       #EDE8E2;
+  --border:       #DDD6CE;
+  --border-light: #CEC6BC;
+  --accent:       #E83D18;
+  --accent-soft:  rgba(232, 61, 24, 0.08);
+  --accent-glow:  rgba(232, 61, 24, 0.2);
+  --text:         #1C1812;
+  --muted:        #8C7F72;
+  --muted-light:  #6A5E52;
+  --green:        #15924E;
+  --green-soft:   rgba(21, 146, 78, 0.08);
+  --amber:        #B45309;
+  --amber-soft:   rgba(180, 83, 9, 0.08);
+  --blue:         #2563EB;
+  --blue-soft:    rgba(37, 99, 235, 0.08);
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --font-body:    'Outfit', sans-serif;
+}
+
+/* Dark mode — toggled by Nuxt UI adding .dark to <html> */
+.dark {
   --bg:           #07090E;
   --surface:      #0D1018;
   --raised:       #131722;
@@ -53,9 +78,6 @@
   --amber-soft:   rgba(245, 158, 11, 0.12);
   --blue:         #4E9EFF;
   --blue-soft:    rgba(78, 158, 255, 0.12);
-  --font-display: 'Bebas Neue', sans-serif;
-  --font-mono:    'DM Mono', monospace;
-  --font-body:    'Outfit', sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

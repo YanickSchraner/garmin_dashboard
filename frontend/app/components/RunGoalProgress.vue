@@ -66,14 +66,14 @@
             <circle
               cx="100" cy="100" r="82"
               fill="none"
-              stroke="#1C2130"
+              class="ring-track"
               stroke-width="10"
             />
-            <!-- Accent track segments (decorative) -->
+            <!-- Decorative dashes on track -->
             <circle
               cx="100" cy="100" r="82"
               fill="none"
-              stroke="#131722"
+              class="ring-track-dashes"
               stroke-width="10"
               stroke-dasharray="4 8"
               transform="rotate(-90 100 100)"
@@ -95,7 +95,7 @@
               v-if="targetPct > 0 && targetPct <= 100"
               :x1="targetTickX1" :y1="targetTickY1"
               :x2="targetTickX2" :y2="targetTickY2"
-              stroke="rgba(255,255,255,0.4)"
+              class="ring-tick"
               stroke-width="2"
               stroke-linecap="round"
             />
@@ -347,7 +347,7 @@ const formattedDate = computed(() => {
 .track-bar {
   position: relative;
   height: 6px;
-  background: var(--raised);
+  background: var(--border);
   border-radius: 3px;
   overflow: visible;
   margin-bottom: 8px;
@@ -413,6 +413,19 @@ const formattedDate = computed(() => {
 .ring-svg {
   width: 100%;
   height: 100%;
+}
+
+.ring-track {
+  stroke: var(--border);
+}
+
+.ring-track-dashes {
+  stroke: var(--raised);
+}
+
+.ring-tick {
+  stroke: var(--muted-light);
+  opacity: 0.6;
 }
 
 .progress-arc {

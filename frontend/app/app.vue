@@ -15,7 +15,6 @@
               <span class="user-greeting">Welcome back,</span>
               <span class="user-name">{{ displayName }}</span>
             </div>
-            <span class="header-tag">PERSONAL ATHLETICS</span>
             <UColorModeButton />
           </div>
         </div>
@@ -187,16 +186,6 @@ html, body {
   letter-spacing: 0.06em;
 }
 
-.header-tag {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--muted);
-  text-transform: uppercase;
-  border: 1px solid var(--border-light);
-  padding: 3px 8px;
-  border-radius: 2px;
-}
 
 .site-main {
   flex: 1;

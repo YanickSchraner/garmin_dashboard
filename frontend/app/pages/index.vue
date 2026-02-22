@@ -109,12 +109,7 @@
           </div>
         </div>
 
-        <div class="motivation-block">
-          <div class="motivation-quote">"Consistency is the key to progress."</div>
-          <div class="motivation-sub">
-            You are {{ goalStatus?.status === 'ahead' ? 'ahead of schedule' : 'working towards' }} your {{ goalStatus?.goal || 104 }}-run goal. Keep moving.
-          </div>
-        </div>
+
       </section>
     </div>
   </div>
@@ -442,29 +437,6 @@ const refreshData = async () => {
 
 .hm-bar--blue { background: var(--blue); }
 
-.motivation-block {
-  margin: 0 24px 20px;
-  padding: 14px 16px;
-  background: var(--raised);
-  border-left: 2px solid var(--accent);
-  border-radius: 0 2px 2px 0;
-}
-
-.motivation-quote {
-  font-style: italic;
-  font-size: 13px;
-  color: var(--text);
-  margin-bottom: 8px;
-  opacity: 0.85;
-}
-
-.motivation-sub {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--muted-light);
-  line-height: 1.6;
-}
 </style>
 
 <style>

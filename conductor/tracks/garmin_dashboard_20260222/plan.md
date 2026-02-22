@@ -9,14 +9,14 @@
     - [ ] Implement `GarminFetcher` class to handle API requests.
     - [ ] Integrate authentication using Garmin Connect credentials.
     - [ ] Add endpoints to FastAPI to expose fetched data.
-- [x] **Task: Conductor - User Manual Verification 'Backend Setup' (checkpoint: 77c16e2)
+- [x] **Task: Conductor - User Manual Verification 'Backend Setup' (checkpoint: 77c16e2)**
 
 ## Phase 2: Frontend Setup
-- [ ] **Task: Initialize Nuxt 3 Frontend with Nuxt UI**
+- [x] **Task: Initialize Nuxt 3 Frontend with Nuxt UI** (commit: 7b5bc81)
     - [ ] Set up Nuxt 3 project using `npx nuxi init`.
     - [ ] Install and configure Nuxt UI.
     - [ ] Create basic layout with navigation and main content area.
-- [ ] **Task: Create Dashboard Shell Components**
+- [~] **Task: Create Dashboard Shell Components**
     - [ ] Implement `RunGoalProgress` component using Nuxt UI.
     - [ ] Implement `WeeklySummary` component shell.
 - [ ] **Task: Conductor - User Manual Verification 'Frontend Setup' (Protocol in workflow.md)**

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, HTTPException, Query
@@ -175,10 +175,7 @@ async def get_goal_status(
     """Calculate progress toward the 104-run annual goal."""
     try:
         start_date = f"{year}-01-01"
-        if year == datetime.now().year:
-            end_date = datetime.now().strftime("%Y-%m-%d")
-        else:
-            end_date = f"{year}-12-31"
+        end_date = datetime.now().strftime("%Y-%m-%d") if year == datetime.now().year else f"{year}-12-31"
 
         activities = fetcher.get_activities(start_date, end_date)
 
@@ -189,11 +186,7 @@ async def get_goal_status(
 
         # Calculate expected runs to date
         total_days = 366 if year % 4 == 0 else 365
-
-        if year == datetime.now().year:
-            days_passed = (datetime.now() - datetime(year, 1, 1)).days + 1
-        else:
-            days_passed = total_days
+        days_passed = (datetime.now() - datetime(year, 1, 1)).days + 1 if year == datetime.now().year else total_days
 
         expected_runs_to_date = (goal_runs / total_days) * days_passed
 
@@ -208,6 +201,84 @@ async def get_goal_status(
     except Exception as e:
         logger.error(f"Error calculating goal status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/stats/weekly")
+async def get_weekly_stats(
+    date: str = Query(None, description="Reference date (YYYY-MM-DD). Defaults to today."),
+    fetcher: GarminFetcher = Depends(get_fetcher),
+):
+    """Get aggregated weekly stats for current and previous week."""
+    try:
+        ref_date = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
+
+        # Find Monday of current week
+        days_to_monday = ref_date.weekday()  # Mon=0, Sun=6
+        curr_monday = (ref_date - timedelta(days=days_to_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+        prev_monday = curr_monday - timedelta(days=7)
+
+        # Ranges
+        curr_end = (curr_monday + timedelta(days=6)).strftime("%Y-%m-%d")
+        prev_start = prev_monday.strftime("%Y-%m-%d")
+
+        # Fetch activities for both weeks in one call
+        all_activities = fetcher.get_activities(prev_start, curr_end)
+
+        weeks = {"current": [], "previous": []}
+        for week_name, start_day in [("current", curr_monday), ("previous", prev_monday)]:
+            for i in range(7):
+                day_date = start_day + timedelta(days=i)
+                day_str = day_date.strftime("%Y-%m-%d")
+
+                # Filter activities for this day
+                day_activities = [a for a in all_activities if a.get("startTimeLocal", "").startswith(day_str)]
+
+                rhr = None
+                try:
+                    rhr_data = fetcher.get_rhr_day(day_str)
+                    rhr = rhr_data.get("restingHeartRate") if rhr_data else None
+                except Exception:
+                    logger.warning(f"Could not fetch RHR for {day_str}")
+
+                sleep_score = None
+                sleep_hours = None
+                try:
+                    sleep_data = fetcher.get_sleep_data(day_str)
+                    if sleep_data:
+                        sleep_score = sleep_data.get("sleepScores", {}).get("overallScore")
+                        duration_sec = sleep_data.get("dailySleepDTO", {}).get("sleepTimeSeconds")
+                        if duration_sec:
+                            sleep_hours = round(duration_sec / 3600, 1)
+                except Exception:
+                    logger.warning(f"Could not fetch Sleep for {day_str}")
+
+                aerobic_te = max([a.get("aerobicTrainingEffect", 0) for a in day_activities] + [0])
+                intensity = None
+                if aerobic_te >= 4:
+                    intensity = "high"
+                elif aerobic_te >= 3:
+                    intensity = "medium"
+                elif aerobic_te > 0:
+                    intensity = "low"
+
+                weeks[week_name].append({
+                    "date": day_str,
+                    "day_label": day_date.strftime("%a").upper(),
+                    "full_day": day_date.strftime("%A"),
+                    "distance": sum(a.get("distance", 0) for a in day_activities) / 1000.0,
+                    "count": len(day_activities),
+                    "rhr": rhr,
+                    "sleep_hours": sleep_hours,
+                    "sleep_score": sleep_score,
+                    "training_intensity": intensity,
+                    "aerobic_te": aerobic_te,
+                })
+
+        return weeks
+
+    except Exception as e:
+        logger.error(f"Error in get_weekly_stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":

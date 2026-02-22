@@ -21,6 +21,16 @@ class GarminFetcher:
         logger.info(f"Fetching health stats for {date_str}")
         return self.client.get_stats(date_str)
 
+    def get_sleep_data(self, date_str: str):
+        """Fetch sleep data for a specific date."""
+        logger.info(f"Fetching sleep data for {date_str}")
+        return self.client.get_sleep_data(date_str)
+
+    def get_rhr_day(self, date_str: str):
+        """Fetch resting heart rate for a specific date."""
+        logger.info(f"Fetching RHR for {date_str}")
+        return self.client.get_rhr_day(date_str)
+
     def get_full_name(self) -> str | None:
         """Fetch the authenticated user's full name from Garmin profile."""
         logger.info("Fetching user full name from Garmin")
@@ -123,7 +133,8 @@ def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garm
 
     if not email or not password:
         logger.error("Credentials missing and token login failed")
-        raise Exception("Authentication required: Missing EMAIL/PASSWORD or valid tokens.")
+        msg = "Authentication required: Missing EMAIL/PASSWORD or valid tokens."
+        raise ValueError(msg)
 
     try:
         logger.info(f"Attempting login for {email} with credentials")
@@ -133,9 +144,9 @@ def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garm
         garmin.garth.dump(str(token_store_path))
         logger.info("Successfully logged in with credentials and saved tokens")
         return garmin
-    except GarthException as e:
-        logger.error(f"Garth authentication error: {e}")
-        raise e
-    except Exception as e:
-        logger.error(f"Unexpected error during Garmin login: {e}")
-        raise e
+    except GarthException:
+        logger.exception("Garth authentication error")
+        raise
+    except Exception:
+        logger.exception("Unexpected error during Garmin login")
+        raise

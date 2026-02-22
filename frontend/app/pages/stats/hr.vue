@@ -12,12 +12,15 @@
 
     <div class="top-summary">
       <AppCard>
-        <div class="summary-grid">
-          <StatBlock label="WEEKLY AVG" value="52" unit="bpm" />
+        <div v-if="loading" class="summary-grid">
+          <AppSkeleton v-for="n in 3" :key="n" height="40px" width="100px" />
+        </div>
+        <div v-else class="summary-grid">
+          <StatBlock label="WEEKLY AVG" :value="weeklyAvg" unit="bpm" />
           <div class="stat-divider"></div>
-          <StatBlock label="MIN RHR" value="48" unit="bpm" />
+          <StatBlock label="MIN RHR" :value="minRhr" unit="bpm" />
           <div class="stat-divider"></div>
-          <StatBlock label="VS LAST WEEK" value="-2 bpm" class="stat-pos" />
+          <StatBlock label="VS LAST WEEK" :value="vsLastWeek" :class="vsLastWeek.startsWith('-') ? 'stat-pos' : ''" />
         </div>
       </AppCard>
     </div>
@@ -25,7 +28,10 @@
     <div class="main-grid">
       <!-- RHR Trend Chart -->
       <AppCard label="Daily RHR Trend" sub-label="Current Week vs Previous">
-        <div class="chart-container">
+        <div v-if="loading" class="chart-loading">
+          <AppSkeleton height="200px" />
+        </div>
+        <div v-else class="chart-container">
           <div class="chart-y-axis">
             <span>65</span>
             <span>60</span>
@@ -85,7 +91,10 @@
 
       <!-- Training & Stress -->
       <AppCard label="Training & Stress" sub-label="RHR Correlation">
-        <div class="list-container">
+        <div v-if="loading" class="list-loading">
+          <AppSkeleton v-for="n in 5" :key="n" height="40px" style="margin-bottom:8px" />
+        </div>
+        <div v-else class="list-container">
           <div v-for="(day, i) in weeklyData" :key="i" class="list-row">
             <div class="day-info">
               <span class="day-name">{{ day.fullDay }}</span>
@@ -95,7 +104,7 @@
               <span v-else class="no-training">REST DAY</span>
             </div>
             <div class="rhr-val">
-              <span class="val-num">{{ day.rhr }}</span>
+              <span class="val-num">{{ day.rhr || '--' }}</span>
               <span class="val-unit">BPM</span>
             </div>
           </div>
@@ -106,31 +115,62 @@
 </template>
 
 <script setup>
-const weeklyData = [
-  { label: 'MON', fullDay: 'Monday',    rhr: 54, prevRhr: 55, training: 'medium' },
-  { label: 'TUE', fullDay: 'Tuesday',   rhr: 52, prevRhr: 56, training: 'high' },
-  { label: 'WED', fullDay: 'Wednesday', rhr: 51, prevRhr: 54, training: null },
-  { label: 'THU', fullDay: 'Thursday',  rhr: 53, prevRhr: 53, training: 'low' },
-  { label: 'FRI', fullDay: 'Friday',    rhr: 50, prevRhr: 52, training: 'medium' },
-  { label: 'SAT', fullDay: 'Saturday',  rhr: 48, prevRhr: 50, training: 'high' },
-  { label: 'SUN', fullDay: 'Sunday',    rhr: 52, prevRhr: 51, training: null },
-]
+const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities } = useWeeklyActivities()
+
+onMounted(() => {
+  fetchActivities()
+})
+
+const weeklyData = computed(() => {
+  return activitiesByDay.value.map((day, i) => ({
+    label: day.label,
+    fullDay: day.fullDay,
+    rhr: day.rhr || 0,
+    prevRhr: prevActivitiesByDay.value[i]?.rhr || 0,
+    training: day.training
+  }))
+})
+
+const weeklyAvg = computed(() => {
+  const values = weeklyData.value.map(d => d.rhr).filter(v => v > 0)
+  if (!values.length) return 0
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
+})
+
+const prevWeeklyAvg = computed(() => {
+  const values = weeklyData.value.map(d => d.prevRhr).filter(v => v > 0)
+  if (!values.length) return 0
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
+})
+
+const minRhr = computed(() => {
+  const values = weeklyData.value.map(d => d.rhr).filter(v => v > 0)
+  if (!values.length) return 0
+  return Math.min(...values)
+})
+
+const vsLastWeek = computed(() => {
+  if (!weeklyAvg.value || !prevWeeklyAvg.value) return '0 bpm'
+  const diff = weeklyAvg.value - prevWeeklyAvg.value
+  return (diff >= 0 ? '+' : '') + diff + ' bpm'
+})
 
 const getX = (index) => (index * 700 / 6)
 const getY = (val) => {
   const min = 45
   const max = 65
-  return 300 - ((val - min) / (max - min) * 300)
+  const clampedVal = Math.max(min, Math.min(max, val || 55))
+  return 300 - ((clampedVal - min) / (max - min) * 300)
 }
 
 const currLinePath = computed(() => {
-  return weeklyData.reduce((path, day, i) => {
+  return weeklyData.value.reduce((path, day, i) => {
     return path + (i === 0 ? 'M' : ' L') + getX(i) + ' ' + getY(day.rhr)
   }, '')
 })
 
 const prevLinePath = computed(() => {
-  return weeklyData.reduce((path, day, i) => {
+  return weeklyData.value.reduce((path, day, i) => {
     return path + (i === 0 ? 'M' : ' L') + getX(i) + ' ' + getY(day.prevRhr)
   }, '')
 })
@@ -146,6 +186,7 @@ const prevLinePath = computed(() => {
 .page-header {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 16px;
 }
 

@@ -12,12 +12,15 @@
 
     <div class="top-summary">
       <AppCard>
-        <div class="summary-grid">
-          <StatBlock label="WEEKLY AVG" value="7h 45m" />
+        <div v-if="loading" class="summary-grid">
+          <AppSkeleton v-for="n in 3" :key="n" height="40px" width="100px" />
+        </div>
+        <div v-else class="summary-grid">
+          <StatBlock label="WEEKLY AVG" :value="weeklyAvg" />
           <div class="stat-divider"></div>
-          <StatBlock label="AVG SCORE" value="82" unit="/100" />
+          <StatBlock label="AVG SCORE" :value="avgScore" unit="/100" />
           <div class="stat-divider"></div>
-          <StatBlock label="VS LAST WEEK" value="+15m" :class="'stat-pos'" />
+          <StatBlock label="VS LAST WEEK" :value="vsLastWeek" :class="vsLastWeek.startsWith('+') ? 'stat-pos' : ''" />
         </div>
       </AppCard>
     </div>
@@ -25,7 +28,10 @@
     <div class="main-grid">
       <!-- Daily Breakdown Chart -->
       <AppCard label="Daily Breakdown" sub-label="Current Week vs Previous">
-        <div class="chart-container">
+        <div v-if="loading" class="chart-loading">
+          <AppSkeleton height="200px" />
+        </div>
+        <div v-else class="chart-container">
           <div class="chart-y-axis">
             <span>10h</span>
             <span>8h</span>
@@ -35,7 +41,7 @@
             <span>0h</span>
           </div>
           <div class="chart-area">
-            <div v-for="(day, i) in weeklyData" :key="i" class="chart-column">
+            <div v-for="(day, i) in chartData" :key="i" class="chart-column">
               <div class="bar-group">
                 <!-- Previous week shadow bar -->
                 <div 
@@ -47,11 +53,11 @@
                   class="bar bar--curr" 
                   :style="{ height: (day.hours / 10 * 100) + '%' }"
                 >
-                  <span class="bar-val">{{ day.hours }}h</span>
+                  <span class="bar-val">{{ day.hours.toFixed(1) }}h</span>
                 </div>
               </div>
               <div class="day-label">{{ day.label }}</div>
-              <!-- Training intensity indicator -->
+              <!-- Dynamic Training intensity indicator -->
               <div 
                 v-if="day.training" 
                 class="training-dot" 
@@ -72,8 +78,11 @@
 
       <!-- Sleep Score Table -->
       <AppCard label="Sleep Quality" sub-label="Score & Recovery">
-        <div class="score-list">
-          <div v-for="(day, i) in weeklyData" :key="i" class="score-row">
+        <div v-if="loading" class="list-loading">
+          <AppSkeleton v-for="n in 5" :key="n" height="40px" style="margin-bottom:8px" />
+        </div>
+        <div v-else class="score-list">
+          <div v-for="(day, i) in chartData" :key="i" class="score-row">
             <div class="score-day">
               <span class="day-name">{{ day.fullDay }}</span>
               <span class="day-date">{{ day.date }}</span>
@@ -82,7 +91,7 @@
               <div class="score-bar-bg">
                 <div class="score-bar-fill" :style="{ width: day.score + '%', background: getScoreColor(day.score) }"></div>
               </div>
-              <span class="score-num" :style="{ color: getScoreColor(day.score) }">{{ day.score }}</span>
+              <span class="score-num" :style="{ color: getScoreColor(day.score) }">{{ day.score || '--' }}</span>
             </div>
             <div class="score-meta">
               <span class="meta-label">RECOVERY</span>
@@ -96,15 +105,56 @@
 </template>
 
 <script setup>
-const weeklyData = [
-  { label: 'MON', fullDay: 'Monday',    date: 'Feb 16', hours: 7.2, prevHours: 7.5, score: 78, training: 'medium', recovery: 'Fair' },
-  { label: 'TUE', fullDay: 'Tuesday',   date: 'Feb 17', hours: 8.1, prevHours: 6.8, score: 88, training: 'high',   recovery: 'Good' },
-  { label: 'WED', fullDay: 'Wednesday', date: 'Feb 18', hours: 7.5, prevHours: 7.2, score: 82, training: null,     recovery: 'Good' },
-  { label: 'THU', fullDay: 'Thursday',  date: 'Feb 19', hours: 6.9, prevHours: 7.8, score: 72, training: 'low',    recovery: 'Needs Rest' },
-  { label: 'FRI', fullDay: 'Friday',    date: 'Feb 20', hours: 8.4, prevHours: 7.0, score: 92, training: 'medium', recovery: 'Excellent' },
-  { label: 'SAT', fullDay: 'Saturday',  date: 'Feb 21', hours: 8.8, prevHours: 8.2, score: 94, training: 'high',   recovery: 'Excellent' },
-  { label: 'SUN', fullDay: 'Sunday',    date: 'Feb 22', hours: 7.8, prevHours: 8.5, score: 85, training: null,     recovery: 'Good' },
-]
+const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities } = useWeeklyActivities()
+
+onMounted(() => {
+  fetchActivities()
+})
+
+const chartData = computed(() => {
+  return activitiesByDay.value.map((day, i) => ({
+    ...day,
+    hours: day.sleep_hours || 0,
+    prevHours: prevActivitiesByDay.value[i]?.sleep_hours || 0,
+    score: day.sleep_score || 0,
+    recovery: getRecoveryLabel(day.sleep_score)
+  }))
+})
+
+const weeklyAvg = computed(() => {
+  const values = chartData.value.map(d => d.hours).filter(v => v > 0)
+  if (!values.length) return '0h 0m'
+  const avg = values.reduce((a, b) => a + b, 0) / values.length
+  const h = Math.floor(avg)
+  const m = Math.round((avg - h) * 60)
+  return `${h}h ${m}m`
+})
+
+const avgScore = computed(() => {
+  const values = chartData.value.map(d => d.score).filter(v => v > 0)
+  if (!values.length) return 0
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
+})
+
+const vsLastWeek = computed(() => {
+  const currValues = chartData.value.map(d => d.hours).filter(v => v > 0)
+  const prevValues = chartData.value.map(d => d.prevHours).filter(v => v > 0)
+  if (!currValues.length || !prevValues.length) return '+0m'
+  
+  const currAvg = currValues.reduce((a, b) => a + b, 0) / currValues.length
+  const prevAvg = prevValues.reduce((a, b) => a + b, 0) / prevValues.length
+  const diffMin = Math.round((currAvg - prevAvg) * 60)
+  
+  return (diffMin >= 0 ? '+' : '') + diffMin + 'm'
+})
+
+const getRecoveryLabel = (s) => {
+  if (!s) return 'Unknown'
+  if (s >= 90) return 'Excellent'
+  if (s >= 80) return 'Good'
+  if (s >= 70) return 'Fair'
+  return 'Needs Rest'
+}
 
 const getScoreColor = (s) => {
   if (s >= 90) return 'var(--green)'
@@ -124,6 +174,7 @@ const getScoreColor = (s) => {
 .page-header {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 16px;
 }
 
@@ -174,6 +225,8 @@ const getScoreColor = (s) => {
 }
 
 /* Chart Styles */
+.chart-loading { padding: 40px; }
+
 .chart-container {
   display: flex;
   height: 300px;

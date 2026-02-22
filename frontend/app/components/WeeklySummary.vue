@@ -11,7 +11,12 @@
       </div>
     </div>
 
-    <div class="stats-strip">
+    <div v-if="loading" class="stats-strip">
+      <div v-for="n in 4" :key="n" class="stat-item">
+        <AppSkeleton height="60px" width="100%" />
+      </div>
+    </div>
+    <div v-else class="stats-strip">
       <div class="stat-item" @click="navigateTo('/stats/sleep')">
         <div class="stat-icon-wrap stat-icon--sleep">
           <svg viewBox="0 0 20 20" fill="none">
@@ -19,9 +24,11 @@
           </svg>
         </div>
         <div class="stat-content">
-          <div class="stat-value">7<span class="stat-unit">h</span> 45<span class="stat-unit">m</span></div>
+          <div class="stat-value">{{ sleepSummary.h }}<span class="stat-unit">h</span> {{ sleepSummary.m }}<span class="stat-unit">m</span></div>
           <div class="stat-label">AVG SLEEP</div>
-          <div class="stat-delta stat-delta--pos">+15m vs last week</div>
+          <div class="stat-delta" :class="sleepSummary.deltaMin >= 0 ? 'stat-delta--pos' : 'stat-delta--neg'">
+            {{ sleepSummary.deltaMin >= 0 ? '+' : '' }}{{ sleepSummary.deltaMin }}m vs last week
+          </div>
         </div>
       </div>
 
@@ -34,9 +41,11 @@
           </svg>
         </div>
         <div class="stat-content">
-          <div class="stat-value">52<span class="stat-unit">bpm</span></div>
+          <div class="stat-value">{{ hrSummary.avg }}<span class="stat-unit">bpm</span></div>
           <div class="stat-label">RESTING HR</div>
-          <div class="stat-delta stat-delta--pos">-2 bpm improved</div>
+          <div class="stat-delta" :class="hrSummary.delta <= 0 ? 'stat-delta--pos' : 'stat-delta--neg'">
+            {{ hrSummary.delta > 0 ? '+' : '' }}{{ hrSummary.delta }} bpm {{ hrSummary.delta <= 0 ? 'improved' : 'increase' }}
+          </div>
         </div>
       </div>
 
@@ -49,9 +58,11 @@
           </svg>
         </div>
         <div class="stat-content">
-          <div class="stat-value">3<span class="stat-unit">runs</span></div>
+          <div class="stat-value">{{ sessionSummary.count }}<span class="stat-unit">runs</span></div>
           <div class="stat-label">TRAININGS</div>
-          <div class="stat-delta stat-delta--goal">Goal reached</div>
+          <div class="stat-delta" :class="sessionSummary.count >= 3 ? 'stat-delta--goal' : ''">
+            {{ sessionSummary.count >= 3 ? 'Goal reached' : (3 - sessionSummary.count) + ' more to goal' }}
+          </div>
         </div>
       </div>
 
@@ -64,9 +75,11 @@
           </svg>
         </div>
         <div class="stat-content">
-          <div class="stat-value">28.4<span class="stat-unit">km</span></div>
+          <div class="stat-value">{{ distSummary.total.toFixed(1) }}<span class="stat-unit">km</span></div>
           <div class="stat-label">TOTAL DIST</div>
-          <div class="stat-delta stat-delta--pos">+3.2 km vs last week</div>
+          <div class="stat-delta" :class="distSummary.delta >= 0 ? 'stat-delta--pos' : 'stat-delta--neg'">
+            {{ distSummary.delta >= 0 ? '+' : '' }}{{ distSummary.delta.toFixed(1) }} km vs last week
+          </div>
         </div>
       </div>
     </div>
@@ -74,14 +87,57 @@
 </template>
 
 <script setup>
+const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities } = useWeeklyActivities()
+
+onMounted(() => {
+  fetchActivities()
+})
+
+const sleepSummary = computed(() => {
+  const curr = activitiesByDay.value.map(d => d.sleep_hours).filter(v => v > 0)
+  const prev = prevActivitiesByDay.value.map(d => d.sleep_hours).filter(v => v > 0)
+  
+  const avg = curr.length ? curr.reduce((a, b) => a + b, 0) / curr.length : 0
+  const h = Math.floor(avg)
+  const m = Math.round((avg - h) * 60)
+  
+  const prevAvg = prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : 0
+  const deltaMin = Math.round((avg - prevAvg) * 60)
+  
+  return { h, m, deltaMin }
+})
+
+const hrSummary = computed(() => {
+  const curr = activitiesByDay.value.map(d => d.rhr).filter(v => v > 0)
+  const prev = prevActivitiesByDay.value.map(d => d.rhr).filter(v => v > 0)
+  
+  const avg = curr.length ? Math.round(curr.reduce((a, b) => a + b, 0) / curr.length) : 0
+  const prevAvg = prev.length ? Math.round(prev.reduce((a, b) => a + b, 0) / prev.length) : 0
+  const delta = avg - prevAvg
+  
+  return { avg, delta }
+})
+
+const sessionSummary = computed(() => {
+  const count = activitiesByDay.value.filter(d => d.count > 0).length
+  return { count }
+})
+
+const distSummary = computed(() => {
+  const total = activitiesByDay.value.reduce((a, b) => a + b.dist, 0)
+  const prevTotal = prevActivitiesByDay.value.reduce((a, b) => a + b.dist, 0)
+  const delta = total - prevTotal
+  return { total, delta }
+})
+
 const currentWeek = computed(() => {
-  const now = new Date()
+  const now = new Date('2026-02-22')
   const start = new Date(now.getFullYear(), 0, 1)
   return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7)
 })
 
 const weekRange = computed(() => {
-  const now = new Date()
+  const now = new Date('2026-02-22')
   const day = now.getDay()
   const monday = new Date(now)
   monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))

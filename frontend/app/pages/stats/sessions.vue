@@ -12,12 +12,15 @@
 
     <div class="top-summary">
       <AppCard>
-        <div class="summary-grid">
-          <StatBlock label="TOTAL SESSIONS" value="3" unit="runs" />
+        <div v-if="loading" class="summary-grid">
+          <AppSkeleton v-for="n in 3" :key="n" height="40px" width="100px" />
+        </div>
+        <div v-else class="summary-grid">
+          <StatBlock label="TOTAL SESSIONS" :value="totalSessions" unit="runs" />
           <div class="stat-divider"></div>
           <StatBlock label="WEEKLY GOAL" value="3" unit="runs" />
           <div class="stat-divider"></div>
-          <StatBlock label="GOAL STATUS" value="100" unit="%" class="stat-pos" />
+          <StatBlock label="GOAL STATUS" :value="goalStatus" unit="%" :class="goalStatus >= 100 ? 'stat-pos' : ''" />
         </div>
       </AppCard>
     </div>
@@ -25,7 +28,10 @@
     <div class="main-grid">
       <!-- Session Bar Chart -->
       <AppCard label="Frequency" sub-label="Training Days Comparison">
-        <div class="chart-container">
+        <div v-if="loading" class="chart-loading">
+          <AppSkeleton height="200px" />
+        </div>
+        <div v-else class="chart-container">
           <div class="chart-y-axis">
             <span>1</span>
             <span>0</span>
@@ -57,18 +63,24 @@
 
       <!-- Training Load -->
       <AppCard label="Training Distribution" sub-label="Intensity Mix">
-        <div class="list-container">
+        <div v-if="loading" class="list-loading">
+          <AppSkeleton v-for="n in 3" :key="n" height="40px" style="margin-bottom:8px" />
+        </div>
+        <div v-else class="list-container">
           <div v-for="(day, i) in weeklyData.filter(d => d.session)" :key="i" class="list-row">
             <div class="day-info">
               <span class="day-name">{{ day.fullDay }}</span>
               <div class="training-badge" :class="'training--' + day.intensity">
-                {{ day.intensity.toUpperCase() }}
+                {{ day.intensity ? day.intensity.toUpperCase() : 'LOW' }}
               </div>
             </div>
             <div class="load-info">
               <span class="load-label">AEROBIC EFFECT</span>
-              <span class="load-val">{{ day.te }}</span>
+              <span class="load-val">{{ day.te.toFixed(1) }}</span>
             </div>
+          </div>
+          <div v-if="weeklyData.filter(d => d.session).length === 0" class="empty-list">
+            No activities recorded this week.
           </div>
         </div>
       </AppCard>
@@ -77,15 +89,32 @@
 </template>
 
 <script setup>
-const weeklyData = [
-  { label: 'MON', fullDay: 'Monday',    session: true,  prevSession: false, intensity: 'medium', te: 3.2 },
-  { label: 'TUE', fullDay: 'Tuesday',   session: true,  prevSession: true,  intensity: 'high',   te: 4.5 },
-  { label: 'WED', fullDay: 'Wednesday', session: false, prevSession: true,  intensity: null,     te: 0 },
-  { label: 'THU', fullDay: 'Thursday',  session: true,  prevSession: false, intensity: 'low',    te: 2.1 },
-  { label: 'FRI', fullDay: 'Friday',    session: false, prevSession: true,  intensity: null,     te: 0 },
-  { label: 'SAT', fullDay: 'Saturday',  session: false, prevSession: false, intensity: null,     te: 0 },
-  { label: 'SUN', fullDay: 'Sunday',    session: false, prevSession: true,  intensity: null,     te: 0 },
-]
+const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities, weeklyStats } = useWeeklyActivities()
+
+onMounted(() => {
+  fetchActivities()
+})
+
+const weeklyData = computed(() => {
+  return activitiesByDay.value.map((day, i) => ({
+    label: day.label,
+    fullDay: day.fullDay,
+    session: day.count > 0,
+    prevSession: (prevActivitiesByDay.value[i]?.count || 0) > 0,
+    intensity: day.training,
+    te: weeklyStats.value.current[i]?.aerobic_te || 0
+  }))
+})
+
+const totalSessions = computed(() => {
+  return weeklyData.value.filter(d => d.session).length
+})
+
+const goalStatus = computed(() => {
+  const goal = 3 // Standard weekly goal
+  const progress = (totalSessions.value / goal) * 100
+  return Math.min(100, Math.round(progress))
+})
 </script>
 
 <style scoped>
@@ -98,6 +127,7 @@ const weeklyData = [
 .page-header {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 16px;
 }
 

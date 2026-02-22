@@ -13,11 +13,11 @@
     <div class="top-summary">
       <AppCard>
         <div class="summary-grid">
-          <StatBlock label="TOTAL DISTANCE" value="28.4" unit="km" />
+          <StatBlock label="TOTAL DISTANCE" :value="totalDist.toFixed(1)" unit="km" />
           <div class="stat-divider"></div>
           <StatBlock label="TARGET" value="30.0" unit="km" />
           <div class="stat-divider"></div>
-          <StatBlock label="PROGRESS" value="94.7" unit="%" class="stat-pos" />
+          <StatBlock label="PROGRESS" :value="((totalDist / 30) * 100).toFixed(1)" unit="%" :class="totalDist >= 30 ? 'stat-pos' : ''" />
         </div>
       </AppCard>
     </div>
@@ -25,7 +25,10 @@
     <div class="main-grid">
       <!-- Distance Chart -->
       <AppCard label="Weekly Accumulation" sub-label="Daily Mileage vs Previous Week">
-        <div class="chart-container">
+        <div v-if="loading" class="chart-loading">
+          <AppSkeleton height="200px" />
+        </div>
+        <div v-else class="chart-container">
           <div class="chart-y-axis">
             <span>12k</span>
             <span>10k</span>
@@ -36,7 +39,7 @@
             <span>0</span>
           </div>
           <div class="chart-area">
-            <div v-for="(day, i) in weeklyData" :key="i" class="chart-column">
+            <div v-for="(day, i) in chartData" :key="i" class="chart-column">
               <div class="bar-group">
                 <div 
                   class="bar bar--prev" 
@@ -46,7 +49,7 @@
                   class="bar bar--curr" 
                   :style="{ height: (day.dist / 12 * 100) + '%' }"
                 >
-                  <span v-if="day.dist > 0" class="bar-val">{{ day.dist }}k</span>
+                  <span v-if="day.dist > 0" class="bar-val">{{ day.dist.toFixed(1) }}k</span>
                 </div>
               </div>
               <div class="day-label">{{ day.label }}</div>
@@ -61,18 +64,21 @@
 
       <!-- Activity List -->
       <AppCard label="Activities" sub-label="This Week">
-        <div class="list-container">
-          <div v-for="(day, i) in weeklyData.filter(d => d.dist > 0)" :key="i" class="list-row">
+        <div v-if="loading" class="list-loading">
+          <AppSkeleton v-for="n in 3" :key="n" height="50px" style="margin-bottom:10px" />
+        </div>
+        <div v-else class="list-container">
+          <div v-for="(day, i) in chartData.filter(d => d.dist > 0)" :key="i" class="list-row">
             <div class="day-info">
               <span class="day-name">{{ day.fullDay }}</span>
-              <span class="day-type">Running Session</span>
+              <span class="day-type">{{ day.count }} Session{{ day.count > 1 ? 's' : '' }}</span>
             </div>
             <div class="dist-val">
-              <span class="val-num">{{ day.dist }}</span>
+              <span class="val-num">{{ day.dist.toFixed(1) }}</span>
               <span class="val-unit">KM</span>
             </div>
           </div>
-          <div v-if="weeklyData.filter(d => d.dist > 0).length === 0" class="empty-list">
+          <div v-if="chartData.filter(d => d.dist > 0).length === 0" class="empty-list">
             No activities recorded this week.
           </div>
         </div>
@@ -82,15 +88,22 @@
 </template>
 
 <script setup>
-const weeklyData = [
-  { label: 'MON', fullDay: 'Monday',    dist: 5.2, prevDist: 0.0 },
-  { label: 'TUE', fullDay: 'Tuesday',   dist: 8.4, prevDist: 6.2 },
-  { label: 'WED', fullDay: 'Wednesday', dist: 0.0, prevDist: 10.5 },
-  { label: 'THU', fullDay: 'Thursday',  dist: 4.8, prevDist: 0.0 },
-  { label: 'FRI', fullDay: 'Friday',    dist: 10.0, prevDist: 5.5 },
-  { label: 'SAT', fullDay: 'Saturday',  dist: 0.0, prevDist: 0.0 },
-  { label: 'SUN', fullDay: 'Sunday',    dist: 0.0, prevDist: 3.0 },
-]
+const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities } = useWeeklyActivities()
+
+onMounted(() => {
+  fetchActivities()
+})
+
+const chartData = computed(() => {
+  return activitiesByDay.value.map((day, i) => ({
+    ...day,
+    prevDist: prevActivitiesByDay.value[i]?.dist || 0
+  }))
+})
+
+const totalDist = computed(() => {
+  return chartData.value.reduce((sum, d) => sum + d.dist, 0)
+})
 </script>
 
 <style scoped>
@@ -103,13 +116,13 @@ const weeklyData = [
 .page-header {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 16px;
 }
 
 .page-title-group {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: column; gap: 2px;
 }
 
 .page-eyebrow {
@@ -153,6 +166,8 @@ const weeklyData = [
 }
 
 /* Chart Styles */
+.chart-loading { padding: 40px; }
+
 .chart-container {
   display: flex;
   height: 300px;
@@ -238,8 +253,7 @@ const weeklyData = [
 
 .legend-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: center; gap: 8px;
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--muted-light);
@@ -248,6 +262,7 @@ const weeklyData = [
 .legend-box { width: 12px; height: 12px; border-radius: 2px; }
 
 /* List Styles */
+.list-loading { padding: 20px; }
 .list-container { padding: 10px 0; }
 .list-row {
   display: flex;

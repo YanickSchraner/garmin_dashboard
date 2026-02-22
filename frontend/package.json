@@ -9,7 +9,9 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "nuxt lint",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@nuxt/ui": "^4.4.0",

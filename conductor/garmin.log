@@ -22,3 +22,16 @@
 2026-02-22 12:48:41.060 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
 2026-02-22 12:48:41.927 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
 2026-02-22 12:48:41.927 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:49:47.694 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:49:48.701 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:49:48.701 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:49:48.712 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:49:49.560 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:49:49.560 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:50:12.665 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:50:13.863 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:50:13.863 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:50:13.868 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:50:14.790 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:50:14.791 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:51:11.066 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import RunGoalProgress from '../../components/RunGoalProgress.vue'
+import RunGoalProgress from '../../app/components/RunGoalProgress.vue'
 
 describe('RunGoalProgress', () => {
   it('renders correctly with default props', () => {

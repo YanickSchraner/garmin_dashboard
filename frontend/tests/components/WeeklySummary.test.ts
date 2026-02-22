@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import WeeklySummary from '../../components/WeeklySummary.vue'
+import WeeklySummary from '../../app/components/WeeklySummary.vue'
 
 describe('WeeklySummary', () => {
   it('renders correctly', () => {

@@ -3,6 +3,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   modules: ['@nuxt/ui'],
+  components: [
+    { path: '~/components/ui', pathPrefix: false },
+    { path: '~/components/activity', pathPrefix: false },
+    '~/components'
+  ],
   future: {
     compatibilityVersion: 4,
   },

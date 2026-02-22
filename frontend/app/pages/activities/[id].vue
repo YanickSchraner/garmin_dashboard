@@ -2,9 +2,14 @@
   <div class="detail-page">
     <!-- Header -->
     <div class="detail-header">
-      <AppButton @click="navigateTo('/activities')" icon-left="←">
-        ALL ACTIVITIES
-      </AppButton>
+      <div class="header-nav">
+        <AppButton @click="navigateTo('/')" icon-left="←" variant="ghost">
+          DASHBOARD
+        </AppButton>
+        <AppButton @click="navigateTo('/activities')" variant="outline">
+          ALL ACTIVITIES
+        </AppButton>
+      </div>
 
       <div v-if="pending" class="header-loading">
         <AppSkeleton height="14px" width="120px" />
@@ -206,8 +211,14 @@ const splitColumns = [
 /* Header */
 .detail-header {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .header-info { flex: 1; }

@@ -3,13 +3,13 @@
     <div class="shell">
       <header class="site-header">
         <div class="header-inner">
-          <div class="logo">
+          <NuxtLink to="/" class="logo">
             <svg class="logo-mark" viewBox="0 0 24 24" fill="none">
               <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" stroke-width="1.5"/>
               <polygon points="12,6 18,10 18,14 12,18 6,14 6,10" fill="currentColor" opacity="0.3"/>
             </svg>
             <span class="logo-text">GARMIN<em>DASH</em></span>
-          </div>
+          </NuxtLink>
           <div class="header-right">
             <div v-if="displayName" class="header-user">
               <span class="user-greeting">Welcome back,</span>

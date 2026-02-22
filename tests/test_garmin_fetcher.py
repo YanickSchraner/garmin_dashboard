@@ -29,6 +29,7 @@ def test_garmin_fetcher_get_activities_summary():
         
         assert len(activities) == 1
         assert activities[0]["activityName"] == "Run"
+        mock_get.assert_called_once_with("connectapi", "/activitylist-service/activities/search/activities", params={"startDate": "2026-01-01", "endDate": "2026-01-02"})
 
 def test_garmin_fetcher_get_health_stats():
     """Test that GarminFetcher can retrieve health stats like RHR and Sleep."""
@@ -46,3 +47,4 @@ def test_garmin_fetcher_get_health_stats():
         
         assert stats["restingHeartRate"] == 55
         assert stats["sleepTime"] == 28800
+        mock_get.assert_called_once_with("connectapi", "/usersummary-service/usersummary/daily/2026-01-01")

@@ -19,7 +19,7 @@
 - [x] **Task: Create Dashboard Shell Components** (commit: ac03af8)
     - [ ] Implement `RunGoalProgress` component using Nuxt UI.
     - [ ] Implement `WeeklySummary` component shell.
-- [x] **Task: Conductor - User Manual Verification 'Frontend Setup' (checkpoint: d7297be)
+- [x] **Task: Conductor - User Manual Verification 'Frontend Setup' (checkpoint: 0202f6b)
 
 ## Phase 3: Integration
 - [ ] **Task: Connect Frontend to Backend API**

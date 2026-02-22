@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 @pytest.fixture
 def client():
@@ -14,7 +14,6 @@ def test_get_activities_endpoint(client):
             {"activityId": 1, "activityName": "Run", "startTimeLocal": "2026-01-01 10:00:00"}
         ]
         
-        # We need to mock login too
         with patch("garmin_dashboard.fetcher.GarminFetcher.login") as mock_login:
             response = client.get("/activities?start_date=2026-01-01&end_date=2026-01-02")
             
@@ -39,9 +38,6 @@ def test_get_health_stats_endpoint(client):
 
 def test_get_goal_status_endpoint(client):
     """Test the /goal-status endpoint."""
-    # Assuming 104 runs/year is the goal.
-    # If it's Feb 22, it's about 7.5 weeks. Goal is 15 runs.
-    # If we have 10 runs, we're at 66%
     with patch("garmin_dashboard.fetcher.GarminFetcher.get_activities") as mock_get_activities:
         # Mocking 10 runs in January/February
         mock_get_activities.return_value = [{"activityType": {"typeKey": "running"}}] * 10
@@ -54,3 +50,11 @@ def test_get_goal_status_endpoint(client):
             assert data["goal"] == 104
             assert data["actual"] == 10
             assert "progress_percent" in data
+
+def test_login_failure_401(client):
+    """Test that login failure returns 401."""
+    with patch("garmin_dashboard.fetcher.GarminFetcher.login") as mock_login:
+        mock_login.side_effect = Exception("Garmin authentication failed: Unexpected title")
+        response = client.get("/activities?start_date=2026-01-01&end_date=2026-01-02")
+        assert response.status_code == 401
+        assert "Garmin Authentication Error" in response.json()["detail"]

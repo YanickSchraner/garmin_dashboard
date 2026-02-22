@@ -1,9 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from garmin_dashboard.fetcher import GarminFetcher
-from datetime import datetime, date
+from datetime import datetime
 import os
-from typing import List, Optional
 from loguru import logger
 
 app = FastAPI(title="Garmin Custom Dashboard API")
@@ -17,16 +16,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In a real app, you would use a secure way to handle credentials.
-# Here we'll assume they are provided via environment variables.
+# In a real app, use a secure way to handle credentials.
 GARMIN_EMAIL = os.getenv("GARMIN_EMAIL", "test@example.com")
 GARMIN_PASSWORD = os.getenv("GARMIN_PASSWORD", "password")
+# Path where we store the session tokens
+GARMIN_TOKEN_STORE = os.getenv("GARMIN_TOKEN_STORE", "conductor/garmin_tokens")
 
 def get_fetcher():
-    """Dependency to get a logged-in GarminFetcher."""
-    fetcher = GarminFetcher(GARMIN_EMAIL, GARMIN_PASSWORD)
-    fetcher.login()
-    return fetcher
+    """Dependency to get a logged-in GarminFetcher with session support."""
+    fetcher = GarminFetcher(GARMIN_EMAIL, GARMIN_PASSWORD, token_store=GARMIN_TOKEN_STORE)
+    try:
+        fetcher.login()
+        return fetcher
+    except Exception as e:
+        logger.error(f"Login failed: {e}")
+        # Return 401 if it's an authentication error
+        if "authentication failed" in str(e).lower() or "unexpected title" in str(e).lower():
+            raise HTTPException(status_code=401, detail=f"Garmin Authentication Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error during Garmin Login")
 
 @app.get("/activities")
 async def get_activities(
@@ -39,7 +46,7 @@ async def get_activities(
         return fetcher.get_activities(start_date, end_date)
     except Exception as e:
         logger.error(f"Error fetching activities: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch activities")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health-stats")
 async def get_health_stats(
@@ -51,7 +58,7 @@ async def get_health_stats(
         return fetcher.get_health_stats(date)
     except Exception as e:
         logger.error(f"Error fetching health stats: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch health stats")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/goal-status")
 async def get_goal_status(
@@ -61,7 +68,6 @@ async def get_goal_status(
     """Calculate progress toward the 104-run annual goal."""
     try:
         start_date = f"{year}-01-01"
-        # If it's the current year, check until today.
         if year == datetime.now().year:
             end_date = datetime.now().strftime("%Y-%m-%d")
         else:
@@ -75,10 +81,8 @@ async def get_goal_status(
         goal_runs = 104
         
         # Calculate expected runs to date
-        total_days = 365
-        if year % 4 == 0: total_days = 366
+        total_days = 366 if year % 4 == 0 else 365
         
-        # How many days have passed in the year
         if year == datetime.now().year:
             days_passed = (datetime.now() - datetime(year, 1, 1)).days + 1
         else:
@@ -96,7 +100,7 @@ async def get_goal_status(
         }
     except Exception as e:
         logger.error(f"Error calculating goal status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to calculate goal status")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

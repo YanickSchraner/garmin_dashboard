@@ -32,9 +32,65 @@ class GarminFetcher:
         return self.client.get_activities(0, limit)
 
     def get_activity_summary(self, activity_id: int) -> dict:
-        """Fetch a single activity's summary data."""
+        """Fetch and normalize a single activity's data.
+
+        get_activity() returns a nested structure where performance metrics live in
+        summaryDTO and some training metrics (TE, TSS, recovery, VO2) can be at the
+        top level or inside summaryDTO depending on activity type / Garmin firmware.
+        We normalize everything into a single flat dict the frontend can rely on.
+        """
         logger.info(f"Fetching activity summary for {activity_id}")
-        return self.client.get_activity(activity_id)
+        raw = self.client.get_activity(activity_id)
+        s = raw.get("summaryDTO", {})
+
+        def pick(*keys: str, sources: list[dict] | None = None) -> object:
+            """Return the first non-None value found across the given key names and sources."""
+            srcs = sources if sources is not None else [raw, s]
+            for key in keys:
+                for src in srcs:
+                    val = src.get(key)
+                    if val is not None:
+                        return val
+            return None
+
+        stride_raw = pick("avgStrideLength", "strideLength", sources=[s, raw])
+        stride_m = round(float(stride_raw) / 100, 2) if stride_raw else None  # Garmin stores in cm
+
+        normalized = {
+            # Identity
+            "activityId":   raw.get("activityId"),
+            "activityName": raw.get("activityName"),
+            "activityType": raw.get("activityTypeDTO", {}).get("typeKey"),
+            "startTimeLocal": raw.get("startTimeLocal") or s.get("startTimeLocal"),
+            # Core performance (always in summaryDTO)
+            "distance":     s.get("distance"),
+            "duration":     s.get("duration") or s.get("elapsedDuration"),
+            "averageSpeed": s.get("averageSpeed"),
+            "averageHR":    s.get("averageHR"),
+            "maxHR":        s.get("maxHR"),
+            "calories":     s.get("calories"),
+            "elevationGain": s.get("elevationGain"),
+            "averageRunCadence": s.get("averageRunCadence") or s.get("averageRunningCadenceInStepsPerMinute"),
+            "strideLength": stride_m,
+            # Training metrics — try top-level first, fall back to summaryDTO
+            # aerobicTrainingEffect can also appear as "trainingEffect" in summaryDTO
+            "aerobicTrainingEffect":   pick("aerobicTrainingEffect", "trainingEffect"),
+            "anaerobicTrainingEffect": pick("anaerobicTrainingEffect"),
+            "trainingStressScore":     pick("trainingStressScore"),
+            "recoveryTime":            pick("recoveryTime"),  # hours
+            "vO2MaxValue":             pick("vO2MaxValue", "vo2MaxValue"),
+        }
+
+        # Log any keys we couldn't map so we can see what Garmin actually returns
+        missing = [k for k, v in normalized.items() if v is None and k not in ("strideLength",)]
+        if missing:
+            top_keys = list(raw.keys())
+            sum_keys = list(s.keys())
+            logger.debug(f"Activity {activity_id} — unmapped fields: {missing}")
+            logger.debug(f"  top-level keys: {top_keys}")
+            logger.debug(f"  summaryDTO keys: {sum_keys}")
+
+        return normalized
 
     def get_activity_hr_zones(self, activity_id: int) -> list:
         """Fetch heart rate zone breakdown for an activity."""

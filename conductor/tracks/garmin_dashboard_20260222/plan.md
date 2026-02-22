@@ -22,10 +22,10 @@
 - [x] **Task: Conductor - User Manual Verification 'Frontend Setup' (checkpoint: 0202f6b)
 
 ## Phase 3: Integration
-- [ ] **Task: Connect Frontend to Backend API**
+- [x] **Task: Connect Frontend to Backend API** (commit: 607878d)
     - [ ] Use `useFetch` to retrieve data from the FastAPI backend.
     - [ ] Display activity data on the dashboard.
-- [ ] **Task: Finalize Core Dashboard View**
+- [~] **Task: Finalize Core Dashboard View**
     - [ ] Polish the single-page view with TailwindCSS.
     - [ ] Verify health-wellness design principles from product guidelines.
 - [ ] **Task: Conductor - User Manual Verification 'Integration' (Protocol in workflow.md)**

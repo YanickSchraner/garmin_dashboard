@@ -12,11 +12,14 @@ class GarminFetcher:
         self.token_store = os.path.expanduser(token_store)
         self.client = Garmin(self.email, self.password)
 
-    def login(self):
+    def login(self, prompt_mfa=None):
         """Log in to Garmin Connect or resume session."""
         try:
             # Ensure the token store directory exists
             os.makedirs(self.token_store, exist_ok=True)
+            
+            # Use is_cn=False for global accounts
+            self.client = Garmin(self.email, self.password, is_cn=False, prompt_mfa=prompt_mfa)
             
             # Try to load session
             if os.path.exists(os.path.join(self.token_store, "oauth2_token.json")):
@@ -32,6 +35,10 @@ class GarminFetcher:
             logger.info("Successfully logged in to Garmin Connect and saved session")
             
         except GarthException as e:
+            msg = str(e)
+            if "Unexpected title" in msg:
+                logger.error(f"SSO Error (likely MFA or Account Lock): {msg}")
+                raise Exception(f"Garmin SSO Error: {msg}. Please check if MFA is enabled or account is locked.")
             logger.error(f"Garth authentication error: {e}")
             raise Exception(f"Garmin authentication failed: {e}")
         except Exception as e:

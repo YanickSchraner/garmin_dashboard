@@ -4,11 +4,15 @@ from garmin_dashboard.fetcher import GarminFetcher
 from datetime import datetime
 import os
 from loguru import logger
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(title="Garmin Custom Dashboard API")
 
 # Configure loguru to write to a file
-LOG_FILE = "garmin.log"
+LOG_FILE = "conductor/garmin.log"
 logger.add(LOG_FILE, rotation="10 MB", level="INFO")
 
 # Configure CORS for Nuxt 3 frontend

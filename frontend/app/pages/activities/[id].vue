@@ -13,12 +13,12 @@
 
       <div v-else-if="data" class="header-info">
         <div class="header-meta">
-          <span class="header-date">{{ formatDate(summary?.startTimeLocal) }}</span>
-          <div class="activity-type-badge" :style="{ color: activityColor(summary?.activityType?.typeKey), borderColor: activityColor(summary?.activityType?.typeKey) + '40' }">
-            {{ formatType(summary?.activityType?.typeKey) }}
+          <span class="header-date">{{ formatDate(activity?.startTimeLocal) }}</span>
+          <div class="activity-type-badge" :style="{ color: activityColor(activity?.activityTypeDTO?.typeKey), borderColor: activityColor(activity?.activityTypeDTO?.typeKey) + '40' }">
+            {{ formatType(activity?.activityTypeDTO?.typeKey) }}
           </div>
         </div>
-        <h1 class="activity-title">{{ summary?.activityName }}</h1>
+        <h1 class="activity-title">{{ activity?.activityName }}</h1>
       </div>
     </div>
 
@@ -32,32 +32,32 @@
       <div class="stats-strip">
         <div class="stat-block">
           <span class="stat-label">DISTANCE</span>
-          <span class="stat-value">{{ formatDistance(summary?.distance) }}</span>
+          <span class="stat-value">{{ formatDistance(stats?.distance) }}</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-block">
           <span class="stat-label">DURATION</span>
-          <span class="stat-value">{{ formatDuration(summary?.duration) }}</span>
+          <span class="stat-value">{{ formatDuration(stats?.duration ?? stats?.elapsedDuration) }}</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-block">
           <span class="stat-label">AVG PACE</span>
-          <span class="stat-value">{{ formatPace(summary?.averageSpeed) }}</span>
+          <span class="stat-value">{{ formatPace(stats?.averageSpeed) }}</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-block">
           <span class="stat-label">AVG HR</span>
-          <span class="stat-value">{{ summary?.averageHR ?? '—' }}<span v-if="summary?.averageHR" class="stat-unit">bpm</span></span>
+          <span class="stat-value">{{ stats?.averageHR ?? '—' }}<span v-if="stats?.averageHR" class="stat-unit">bpm</span></span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-block">
           <span class="stat-label">MAX HR</span>
-          <span class="stat-value">{{ summary?.maxHR ?? '—' }}<span v-if="summary?.maxHR" class="stat-unit">bpm</span></span>
+          <span class="stat-value">{{ stats?.maxHR ?? '—' }}<span v-if="stats?.maxHR" class="stat-unit">bpm</span></span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-block">
           <span class="stat-label">CALORIES</span>
-          <span class="stat-value">{{ summary?.calories ?? '—' }}<span v-if="summary?.calories" class="stat-unit">kcal</span></span>
+          <span class="stat-value">{{ stats?.calories ?? '—' }}<span v-if="stats?.calories" class="stat-unit">kcal</span></span>
         </div>
       </div>
 
@@ -72,9 +72,9 @@
             <div class="metric-row">
               <span class="metric-name">Aerobic Effect</span>
               <div class="metric-right">
-                <span class="metric-val">{{ summary?.aerobicTrainingEffect?.toFixed(1) ?? '—' }}</span>
-                <div v-if="summary?.aerobicTrainingEffect" class="metric-bar">
-                  <div class="metric-fill metric-fill--green" :style="{ width: (summary.aerobicTrainingEffect / 5 * 100) + '%' }"></div>
+                <span class="metric-val">{{ aerobicTE?.toFixed(1) ?? '—' }}</span>
+                <div v-if="aerobicTE" class="metric-bar">
+                  <div class="metric-fill metric-fill--green" :style="{ width: (aerobicTE / 5 * 100) + '%' }"></div>
                 </div>
               </div>
             </div>
@@ -82,9 +82,9 @@
             <div class="metric-row">
               <span class="metric-name">Anaerobic Effect</span>
               <div class="metric-right">
-                <span class="metric-val">{{ summary?.anaerobicTrainingEffect?.toFixed(1) ?? '—' }}</span>
-                <div v-if="summary?.anaerobicTrainingEffect" class="metric-bar">
-                  <div class="metric-fill metric-fill--amber" :style="{ width: (summary.anaerobicTrainingEffect / 5 * 100) + '%' }"></div>
+                <span class="metric-val">{{ anaerobicTE?.toFixed(1) ?? '—' }}</span>
+                <div v-if="anaerobicTE" class="metric-bar">
+                  <div class="metric-fill metric-fill--amber" :style="{ width: (anaerobicTE / 5 * 100) + '%' }"></div>
                 </div>
               </div>
             </div>
@@ -92,7 +92,7 @@
             <div class="metric-row">
               <span class="metric-name">Training Stress Score</span>
               <div class="metric-right">
-                <span class="metric-val">{{ summary?.trainingStressScore?.toFixed(0) ?? '—' }}</span>
+                <span class="metric-val">{{ tss?.toFixed(0) ?? '—' }}</span>
               </div>
             </div>
 
@@ -102,7 +102,7 @@
               <span class="metric-name">Recovery Time</span>
               <div class="metric-right">
                 <span class="metric-val metric-val--accent">
-                  {{ summary?.recoveryTime ? summary.recoveryTime + 'h' : '—' }}
+                  {{ recoveryTime ? recoveryTime + 'h' : '—' }}
                 </span>
               </div>
             </div>
@@ -110,28 +110,28 @@
             <div class="metric-row">
               <span class="metric-name">Avg Cadence</span>
               <div class="metric-right">
-                <span class="metric-val">{{ summary?.averageRunningCadenceInStepsPerMinute?.toFixed(0) ?? '—' }}<span v-if="summary?.averageRunningCadenceInStepsPerMinute" class="metric-unit"> spm</span></span>
+                <span class="metric-val">{{ cadence?.toFixed(0) ?? '—' }}<span v-if="cadence" class="metric-unit"> spm</span></span>
               </div>
             </div>
 
             <div class="metric-row">
               <span class="metric-name">Avg Stride Length</span>
               <div class="metric-right">
-                <span class="metric-val">{{ summary?.avgStrideLength?.toFixed(2) ?? '—' }}<span v-if="summary?.avgStrideLength" class="metric-unit"> m</span></span>
+                <span class="metric-val">{{ strideLength ?? '—' }}<span v-if="strideLength" class="metric-unit"> m</span></span>
               </div>
             </div>
 
             <div class="metric-row">
               <span class="metric-name">Elevation Gain</span>
               <div class="metric-right">
-                <span class="metric-val">{{ summary?.elevationGain?.toFixed(0) ?? '—' }}<span v-if="summary?.elevationGain" class="metric-unit"> m</span></span>
+                <span class="metric-val">{{ stats?.elevationGain?.toFixed(0) ?? '—' }}<span v-if="stats?.elevationGain" class="metric-unit"> m</span></span>
               </div>
             </div>
 
             <div class="metric-row">
               <span class="metric-name">VO2 Max</span>
               <div class="metric-right">
-                <span class="metric-val">{{ summary?.vO2MaxValue?.toFixed(1) ?? '—' }}</span>
+                <span class="metric-val">{{ vo2max?.toFixed(1) ?? '—' }}</span>
               </div>
             </div>
           </div>
@@ -230,9 +230,30 @@ const id     = route.params.id
 
 const { data, pending, error } = await useFetch(`http://localhost:8000/activities/${id}`)
 
-const summary  = computed(() => data.value?.summary)
+// get_activity() returns a nested structure:
+//   top-level: activityName, activityTypeDTO, startTimeLocal — and some metrics
+//   summaryDTO: core performance metrics (distance, HR, speed, cadence, elevation)
+// Some fields (TE, TSS, recovery, VO2) can be at top-level OR in summaryDTO depending on
+// activity type/firmware; we try both with ?? fallback.
+const activity = computed(() => data.value?.summary)
+const stats    = computed(() => data.value?.summary?.summaryDTO)
 const hrZones  = computed(() => data.value?.hr_zones)
 const lapDTOs  = computed(() => data.value?.splits?.lapDTOs)
+
+// Fields that may live at top level or inside summaryDTO
+const aerobicTE    = computed(() => activity.value?.aerobicTrainingEffect   ?? stats.value?.aerobicTrainingEffect)
+const anaerobicTE  = computed(() => activity.value?.anaerobicTrainingEffect ?? stats.value?.anaerobicTrainingEffect)
+const tss          = computed(() => activity.value?.trainingStressScore     ?? stats.value?.trainingStressScore)
+const recoveryTime = computed(() => activity.value?.recoveryTime            ?? stats.value?.recoveryTime)
+const vo2max       = computed(() => activity.value?.vO2MaxValue             ?? stats.value?.vO2MaxValue)
+const cadence      = computed(() => stats.value?.averageRunCadence          ?? stats.value?.averageRunningCadenceInStepsPerMinute)
+
+// Stride length is stored in cm by Garmin — convert to metres
+const strideLength = computed(() => {
+  const raw = stats.value?.avgStrideLength ?? stats.value?.strideLength
+  if (raw == null) return null
+  return (raw / 100).toFixed(2)  // cm → m
+})
 
 // HR Zone helpers
 const totalZoneSecs = computed(() =>

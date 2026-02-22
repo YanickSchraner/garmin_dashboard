@@ -103,6 +103,43 @@ html, body {
   background: var(--surface) !important;
   border-color: var(--border) !important;
 }
+
+/* Global UTable overrides — applied to every page */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead tr {
+  background: var(--raised) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+thead th {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.2em !important;
+  color: var(--muted) !important;
+  text-transform: uppercase !important;
+  padding: 10px 16px !important;
+  font-weight: 500 !important;
+  background: var(--raised) !important;
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border) !important;
+  transition: background 0.15s !important;
+}
+
+tbody tr:hover { background: var(--raised) !important; }
+tbody tr:last-child { border-bottom: none !important; }
+
+tbody td {
+  padding: 12px 16px !important;
+  background: transparent !important;
+  color: var(--text) !important;
+}
 </style>
 
 <style scoped>

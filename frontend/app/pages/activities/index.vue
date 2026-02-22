@@ -1,9 +1,9 @@
 <template>
   <div class="page">
     <div class="page-header">
-      <button class="back-btn" @click="navigateTo('/')">
-        <span>←</span> DASHBOARD
-      </button>
+      <AppButton @click="navigateTo('/')" icon-left="←">
+        DASHBOARD
+      </AppButton>
       <div class="page-title-group">
         <span class="page-eyebrow">ALL ACTIVITIES</span>
         <h1 class="page-title">Activity Log</h1>
@@ -20,15 +20,15 @@
       </div>
     </div>
 
-    <div class="table-panel">
+    <AppCard body-style="padding: 0">
       <div v-if="pending" class="table-loading">
         <div v-for="n in 8" :key="n" class="loading-row">
-          <div class="loading-cell w-lg shimmer"></div>
-          <div class="loading-cell w-sm shimmer"></div>
-          <div class="loading-cell w-sm shimmer"></div>
-          <div class="loading-cell w-sm shimmer"></div>
-          <div class="loading-cell w-sm shimmer"></div>
-          <div class="loading-cell w-xs shimmer"></div>
+          <AppSkeleton class="w-lg" />
+          <AppSkeleton class="w-sm" />
+          <AppSkeleton class="w-sm" />
+          <AppSkeleton class="w-sm" />
+          <AppSkeleton class="w-sm" />
+          <AppSkeleton class="w-xs" />
         </div>
       </div>
 
@@ -45,7 +45,7 @@
       >
         <template #activityName-cell="{ row }">
           <div class="cell-name">
-            <div class="type-dot" :style="{ background: activityColor(row.original.activityType?.typeKey) }"></div>
+            <ActivityTypeDot :type="row.original.activityType?.typeKey" />
             <span class="name-text">{{ row.original.activityName }}</span>
           </div>
         </template>
@@ -70,14 +70,12 @@
         <template #aerobicTrainingEffect-cell="{ row }">
           <div v-if="row.original.aerobicTrainingEffect" class="te-wrap">
             <span class="te-val">{{ row.original.aerobicTrainingEffect?.toFixed(1) }}</span>
-            <div class="te-bar">
-              <div class="te-fill" :style="{ width: (row.original.aerobicTrainingEffect / 5 * 100) + '%', background: teColor(row.original.aerobicTrainingEffect) }"></div>
-            </div>
+            <TrainingEffectBar :value="row.original.aerobicTrainingEffect" />
           </div>
           <span v-else class="cell-muted">—</span>
         </template>
       </UTable>
-    </div>
+    </AppCard>
 
     <div class="page-footer">
       <span class="footer-count">{{ activities?.length || 0 }} activities shown</span>
@@ -87,6 +85,8 @@
 
 <script setup>
 const limit = ref(25)
+
+const { formatDate, formatDistance, formatDuration, formatPace } = useFormatters()
 
 const { data: activities, pending, refresh } = await useFetch(
   () => `http://localhost:8000/activities/recent?limit=${limit.value}`,
@@ -102,46 +102,6 @@ const columns = [
   { accessorKey: 'averageHR',              header: 'Avg HR' },
   { accessorKey: 'aerobicTrainingEffect',  header: 'Training Effect' },
 ]
-
-const activityColor = (type) => {
-  if (type === 'running')  return 'var(--accent)'
-  if (type === 'cycling')  return 'var(--blue)'
-  if (type === 'swimming') return 'var(--blue)'
-  return 'var(--muted-light)'
-}
-
-const teColor = (te) => {
-  if (te >= 4)  return 'var(--accent)'
-  if (te >= 3)  return 'var(--amber)'
-  return 'var(--green)'
-}
-
-const formatDate = (s) => {
-  if (!s) return '—'
-  return new Date(s).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
-}
-
-const formatDistance = (m) => {
-  if (!m) return '—'
-  return (m / 1000).toFixed(2) + ' km'
-}
-
-const formatDuration = (s) => {
-  if (!s) return '—'
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = Math.round(s % 60)
-  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
-  return `${m}:${String(sec).padStart(2,'0')}`
-}
-
-const formatPace = (mps) => {
-  if (!mps) return '—'
-  const spk = 1000 / mps
-  const m = Math.floor(spk / 60)
-  const s = Math.round(spk % 60)
-  return `${m}:${String(s).padStart(2,'0')}/km`
-}
 </script>
 
 <style scoped>
@@ -157,27 +117,6 @@ const formatPace = (mps) => {
   justify-content: space-between;
   gap: 16px;
 }
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--muted-light);
-  background: transparent;
-  border: 1px solid var(--border-light);
-  padding: 6px 12px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.back-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 .page-title-group {
   display: flex;
@@ -227,14 +166,6 @@ const formatPace = (mps) => {
   cursor: pointer;
 }
 
-/* Table panel */
-.table-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
 .table-loading { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
 
 .loading-row {
@@ -243,25 +174,9 @@ const formatPace = (mps) => {
   align-items: center;
 }
 
-.loading-cell {
-  height: 12px;
-  border-radius: 2px;
-}
-
 .w-lg  { flex: 3; }
 .w-sm  { flex: 1; }
 .w-xs  { flex: 0.7; }
-
-.shimmer {
-  background: linear-gradient(90deg, var(--raised) 25%, var(--border) 50%, var(--raised) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 .table-empty {
   display: flex;
@@ -281,13 +196,6 @@ const formatPace = (mps) => {
 
 /* Cell styles */
 .cell-name { display: flex; align-items: center; gap: 10px; }
-
-.type-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
 
 .name-text { font-weight: 600; font-size: 13px; color: var(--text); }
 
@@ -324,8 +232,6 @@ const formatPace = (mps) => {
 
 .te-wrap { display: flex; align-items: center; gap: 8px; }
 .te-val { font-family: var(--font-display); font-size: 16px; color: var(--text); width: 28px; }
-.te-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-.te-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
 
 /* Page footer */
 .page-footer {

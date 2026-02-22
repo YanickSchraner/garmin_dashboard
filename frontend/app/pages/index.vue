@@ -29,89 +29,83 @@
     <div class="bottom-grid">
       <!-- Recent Activities -->
       <section class="activities-panel">
-        <div class="panel-header">
-          <div class="panel-title-group">
-            <span class="panel-eyebrow">RECENT</span>
-            <h2 class="panel-title">Activities</h2>
-          </div>
-          <button class="view-all-btn" @click="navigateTo('/activities')">
-            VIEW ALL
-            <span class="btn-arrow">→</span>
-          </button>
-        </div>
+        <AppCard allow-overflow>
+          <template #header>
+            <div class="panel-title-group">
+              <span class="panel-eyebrow">RECENT</span>
+              <h2 class="panel-title">Activities</h2>
+            </div>
+            <AppButton @click="navigateTo('/activities')" icon-right="→">
+              VIEW ALL
+            </AppButton>
+          </template>
 
-        <div class="table-wrap">
-          <div v-if="activitiesLoading" class="table-loading">
-            <div class="loading-rows">
-              <div v-for="n in 5" :key="n" class="loading-row">
-                <div class="loading-cell w-half shimmer"></div>
-                <div class="loading-cell w-quarter shimmer"></div>
-                <div class="loading-cell w-fifth shimmer"></div>
+          <div class="table-wrap">
+            <div v-if="activitiesLoading" class="table-loading">
+              <div class="loading-rows">
+                <div v-for="n in 5" :key="n" class="loading-row">
+                  <AppSkeleton class="w-half" />
+                  <AppSkeleton class="w-quarter" />
+                  <AppSkeleton class="w-fifth" />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div v-else-if="!activities || activities.length === 0" class="table-empty">
-            <div class="empty-icon">⬡</div>
-            <p class="empty-text">No recent activities — time to hit the road.</p>
-          </div>
+            <div v-else-if="!activities || activities.length === 0" class="table-empty">
+              <div class="empty-icon">⬡</div>
+              <p class="empty-text">No recent activities — time to hit the road.</p>
+            </div>
 
-          <UTable
-            v-else
-            :data="activities"
-            :columns="activityColumns"
-            class="clickable-table"
-            @select="(_, row) => navigateTo(`/activities/${row.original.activityId}`)"
-          >
-            <template #activityName-cell="{ row }">
-              <div class="cell-activity">
-                <div class="activity-type-dot" :style="{ background: getActivityColor(row.original.activityType?.typeKey) }"></div>
-                <span class="activity-name">{{ row.original.activityName }}</span>
-              </div>
-            </template>
-            <template #startTimeLocal-cell="{ row }">
-              <span class="cell-date">{{ formatDate(row.original.startTimeLocal) }}</span>
-            </template>
-            <template #distance-cell="{ row }">
-              <span class="cell-distance">{{ (row.original.distance / 1000).toFixed(2) }}<span class="cell-unit"> km</span></span>
-            </template>
-          </UTable>
-        </div>
+            <UTable
+              v-else
+              :data="activities"
+              :columns="activityColumns"
+              class="clickable-table"
+              @select="(_, row) => navigateTo(`/activities/${row.original.activityId}`)"
+            >
+              <template #activityName-cell="{ row }">
+                <div class="cell-activity">
+                  <ActivityTypeDot :type="row.original.activityType?.typeKey" />
+                  <span class="activity-name">{{ row.original.activityName }}</span>
+                </div>
+              </template>
+              <template #startTimeLocal-cell="{ row }">
+                <span class="cell-date">{{ formatDate(row.original.startTimeLocal) }}</span>
+              </template>
+              <template #distance-cell="{ row }">
+                <span class="cell-distance">{{ (row.original.distance / 1000).toFixed(2) }}<span class="cell-unit"> km</span></span>
+              </template>
+            </UTable>
+          </div>
+        </AppCard>
       </section>
 
       <!-- Health Snapshot -->
       <section class="health-panel">
-        <div class="panel-header">
-          <div class="panel-title-group">
-            <span class="panel-eyebrow">2026 TRENDS</span>
-            <h2 class="panel-title">Health</h2>
-          </div>
-        </div>
-
-        <div class="health-metrics">
-          <div class="health-metric">
-            <div class="hm-label">RHR IMPROVEMENT</div>
-            <div class="hm-value">
-              <span class="hm-num">-4</span>
-              <span class="hm-unit">BPM</span>
+        <AppCard label="Health" sub-label="2026 TRENDS">
+          <div class="health-metrics">
+            <div class="health-metric">
+              <div class="hm-label">RHR IMPROVEMENT</div>
+              <div class="hm-value">
+                <span class="hm-num">-4</span>
+                <span class="hm-unit">BPM</span>
+              </div>
+              <div class="hm-desc">since January 2026</div>
+              <div class="hm-bar"><div class="hm-bar-fill" style="width: 72%"></div></div>
             </div>
-            <div class="hm-desc">since January 2026</div>
-            <div class="hm-bar"><div class="hm-bar-fill" style="width: 72%"></div></div>
-          </div>
 
-          <div class="hm-separator"></div>
+            <div class="hm-separator"></div>
 
-          <div class="health-metric">
-            <div class="hm-label">AVG SLEEP DURATION</div>
-            <div class="hm-value">
-              <span class="hm-num">7h 12m</span>
+            <div class="health-metric">
+              <div class="hm-label">AVG SLEEP DURATION</div>
+              <div class="hm-value">
+                <span class="hm-num">7h 12m</span>
+              </div>
+              <div class="hm-desc">+18m vs 2025</div>
+              <div class="hm-bar"><div class="hm-bar-fill hm-bar--blue" style="width: 60%"></div></div>
             </div>
-            <div class="hm-desc">+18m vs 2025</div>
-            <div class="hm-bar"><div class="hm-bar-fill hm-bar--blue" style="width: 60%"></div></div>
           </div>
-        </div>
-
-
+        </AppCard>
       </section>
     </div>
   </div>
@@ -119,6 +113,8 @@
 
 <script setup>
 const apiBase = 'http://localhost:8000'
+
+const { formatDate } = useFormatters()
 
 const {
   data: goalStatus,
@@ -147,19 +143,6 @@ const activityColumns = [
   { accessorKey: 'startTimeLocal', header: 'Date' },
   { accessorKey: 'distance', header: 'Distance' }
 ]
-
-const getActivityColor = (type) => {
-  if (type === 'running') return 'var(--accent)'
-  if (type === 'cycling') return 'var(--blue)'
-  return 'var(--muted-light)'
-}
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric'
-  }).toUpperCase()
-}
 
 const refreshData = async () => {
   await Promise.all([refreshGoal(), refreshActivities()])
@@ -202,24 +185,6 @@ const refreshData = async () => {
   .bottom-grid { grid-template-columns: 1fr; }
 }
 
-/* Panel shared */
-.activities-panel,
-.health-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.panel-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 18px 24px 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--raised);
-}
-
 .panel-title-group {
   display: flex;
   flex-direction: column;
@@ -240,31 +205,6 @@ const refreshData = async () => {
   letter-spacing: 0.05em;
 }
 
-.view-all-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--muted-light);
-  background: transparent;
-  border: 1px solid var(--border-light);
-  padding: 5px 10px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-transform: uppercase;
-}
-
-.view-all-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.btn-arrow { transition: transform 0.2s; }
-.view-all-btn:hover .btn-arrow { transform: translateX(3px); }
-
 /* Table */
 .table-wrap { padding: 4px 0; }
 
@@ -282,26 +222,9 @@ const refreshData = async () => {
   align-items: center;
 }
 
-.loading-cell {
-  height: 12px;
-  border-radius: 2px;
-  background: var(--raised);
-}
-
 .w-half    { flex: 2; }
 .w-quarter { flex: 1; }
 .w-fifth   { flex: 0.6; }
-
-.shimmer {
-  background: linear-gradient(90deg, var(--raised) 25%, var(--border) 50%, var(--raised) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 .table-empty {
   display: flex;
@@ -330,13 +253,6 @@ const refreshData = async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.activity-type-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 .activity-name {

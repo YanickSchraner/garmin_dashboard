@@ -28,8 +28,8 @@ export const useWeeklyActivities = () => {
         }
       })
       weeklyStats.value = data
-      // For backward compatibility with existing components using activities.value
-      activities.value = data.current || []
+      // For backward compatibility
+      activities.value = data.current?.days || []
     } catch (e) {
       console.error('Failed to fetch weekly stats', e)
     } finally {
@@ -38,9 +38,9 @@ export const useWeeklyActivities = () => {
   }
 
   const activitiesByDay = computed(() => {
-    if (!weeklyStats.value.current.length) return []
+    if (!weeklyStats.value.current?.days?.length) return []
     
-    return weeklyStats.value.current.map(day => ({
+    return weeklyStats.value.current.days.map(day => ({
       label: day.day_label,
       fullDay: day.full_day,
       date: day.date,
@@ -54,9 +54,9 @@ export const useWeeklyActivities = () => {
   })
 
   const prevActivitiesByDay = computed(() => {
-    if (!weeklyStats.value.previous.length) return []
+    if (!weeklyStats.value.previous?.days?.length) return []
     
-    return weeklyStats.value.previous.map(day => ({
+    return weeklyStats.value.previous.days.map(day => ({
       label: day.day_label,
       fullDay: day.full_day,
       date: day.date,
@@ -69,12 +69,17 @@ export const useWeeklyActivities = () => {
     }))
   })
 
+  const currentIntensity = computed(() => weeklyStats.value.current?.zones || [0,0,0,0,0,0])
+  const prevIntensity = computed(() => weeklyStats.value.previous?.zones || [0,0,0,0,0,0])
+
   return {
     loading,
     activities,
     weeklyStats,
     activitiesByDay,
     prevActivitiesByDay,
+    currentIntensity,
+    prevIntensity,
     fetchActivities,
     getWeekRange
   }

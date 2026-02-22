@@ -34,17 +34,17 @@
 
       <div class="stat-divider"></div>
 
-      <div class="stat-item" @click="navigateTo('/stats/hr')">
-        <div class="stat-icon-wrap stat-icon--heart">
+      <div class="stat-item" @click="navigateTo('/stats/intensity')">
+        <div class="stat-icon-wrap stat-icon--intensity">
           <svg viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
+            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
           </svg>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ hrSummary.avg }}<span class="stat-unit">bpm</span></div>
-          <div class="stat-label">RESTING HR</div>
-          <div class="stat-delta" :class="hrSummary.delta <= 0 ? 'stat-delta--pos' : 'stat-delta--neg'">
-            {{ hrSummary.delta > 0 ? '+' : '' }}{{ hrSummary.delta }} bpm {{ hrSummary.delta <= 0 ? 'improved' : 'increase' }}
+          <div class="stat-value">{{ intensitySummary.total }}<span class="stat-unit">min</span></div>
+          <div class="stat-label">INTENSITY</div>
+          <div class="stat-delta" :class="intensitySummary.delta >= 0 ? 'stat-delta--pos' : 'stat-delta--neg'">
+            {{ intensitySummary.delta >= 0 ? '+' : '' }}{{ intensitySummary.delta }} min vs last week
           </div>
         </div>
       </div>
@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities } = useWeeklyActivities()
+const { activitiesByDay, prevActivitiesByDay, currentIntensity, prevIntensity, loading, fetchActivities } = useWeeklyActivities()
 
 onMounted(() => {
   fetchActivities()
@@ -107,15 +107,12 @@ const sleepSummary = computed(() => {
   return { h, m, deltaMin }
 })
 
-const hrSummary = computed(() => {
-  const curr = activitiesByDay.value.map(d => d.rhr).filter(v => v > 0)
-  const prev = prevActivitiesByDay.value.map(d => d.rhr).filter(v => v > 0)
+const intensitySummary = computed(() => {
+  const total = Math.round(currentIntensity.value.reduce((a, b) => a + b, 0))
+  const prevTotal = Math.round(prevIntensity.value.reduce((a, b) => a + b, 0))
+  const delta = total - prevTotal
   
-  const avg = curr.length ? Math.round(curr.reduce((a, b) => a + b, 0) / curr.length) : 0
-  const prevAvg = prev.length ? Math.round(prev.reduce((a, b) => a + b, 0) / prev.length) : 0
-  const delta = avg - prevAvg
-  
-  return { avg, delta }
+  return { total, delta }
 })
 
 const sessionSummary = computed(() => {
@@ -244,7 +241,7 @@ const weekRange = computed(() => {
 .stat-icon-wrap svg { width: 18px; height: 18px; }
 
 .stat-icon--sleep    { background: var(--blue-soft);   color: var(--blue); }
-.stat-icon--heart    { background: rgba(255,69,33,0.12); color: var(--accent); }
+.stat-icon--intensity { background: rgba(255,165,0,0.12); color: var(--amber); }
 .stat-icon--sessions { background: var(--green-soft);  color: var(--green); }
 .stat-icon--distance { background: var(--amber-soft);  color: var(--amber); }
 

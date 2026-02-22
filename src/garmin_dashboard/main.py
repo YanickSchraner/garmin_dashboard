@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from functools import lru_cache
+from pathlib import Path
 
+from diskcache import Cache
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
@@ -9,6 +11,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from garmin_dashboard.fetcher import GarminFetcher, init_garmin
 
 app = FastAPI(title="Garmin Custom Dashboard API")
+
+# Persistent cache for Garmin API results
+CACHE_DIR = Path.home() / ".garmin_cache"
+cache = Cache(str(CACHE_DIR))
 
 # Configure loguru to write to a file
 LOG_FILE = "garmin.log"
@@ -208,68 +214,96 @@ async def get_weekly_stats(
     date: str = Query(None, description="Reference date (YYYY-MM-DD). Defaults to today."),
     fetcher: GarminFetcher = Depends(get_fetcher),
 ):
-    """Get aggregated weekly stats for current and previous week."""
+    """Get aggregated weekly stats including intensity distribution."""
     try:
         ref_date = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now()
 
         # Find Monday of current week
-        days_to_monday = ref_date.weekday()  # Mon=0, Sun=6
+        days_to_monday = ref_date.weekday()
         curr_monday = (ref_date - timedelta(days=days_to_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
         prev_monday = curr_monday - timedelta(days=7)
 
-        # Ranges
+        # Range for activities
         curr_end = (curr_monday + timedelta(days=6)).strftime("%Y-%m-%d")
         prev_start = prev_monday.strftime("%Y-%m-%d")
 
-        # Fetch activities for both weeks in one call
+        # Fetch all activities for the 14-day range
+        # We don't cache the range list because it changes frequently,
+        # but we'll cache the expensive sub-calls.
         all_activities = fetcher.get_activities(prev_start, curr_end)
 
-        weeks = {"current": [], "previous": []}
+        weeks = {"current": {"days": [], "zones": [0] * 6}, "previous": {"days": [], "zones": [0] * 6}}
+
         for week_name, start_day in [("current", curr_monday), ("previous", prev_monday)]:
             for i in range(7):
                 day_date = start_day + timedelta(days=i)
                 day_str = day_date.strftime("%Y-%m-%d")
 
-                # Filter activities for this day
                 day_activities = [a for a in all_activities if a.get("startTimeLocal", "").startswith(day_str)]
 
-                rhr = None
-                try:
-                    rhr_data = fetcher.get_rhr_day(day_str)
-                    rhr = rhr_data.get("restingHeartRate") if rhr_data else None
-                except Exception:
-                    logger.warning(f"Could not fetch RHR for {day_str}")
+                # Caching RHR
+                rhr_key = f"rhr_{day_str}"
+                rhr = cache.get(rhr_key)
+                if rhr is None:
+                    try:
+                        rhr_data = fetcher.get_rhr_day(day_str)
+                        rhr = rhr_data.get("restingHeartRate") if rhr_data else 0
+                        cache.set(rhr_key, rhr, expire=86400) # Cache for 1 day
+                    except Exception:
+                        logger.warning(f"Could not fetch RHR for {day_str}")
+                        rhr = 0
 
-                sleep_score = None
-                sleep_hours = None
-                try:
-                    sleep_data = fetcher.get_sleep_data(day_str)
-                    if sleep_data:
-                        sleep_score = sleep_data.get("sleepScores", {}).get("overallScore")
-                        duration_sec = sleep_data.get("dailySleepDTO", {}).get("sleepTimeSeconds")
-                        if duration_sec:
-                            sleep_hours = round(duration_sec / 3600, 1)
-                except Exception:
-                    logger.warning(f"Could not fetch Sleep for {day_str}")
+                # Caching Sleep
+                sleep_key = f"sleep_{day_str}"
+                sleep_data = cache.get(sleep_key)
+                if sleep_data is None:
+                    sleep_data = {"score": 0, "hours": 0}
+                    try:
+                        fetched_sleep = fetcher.get_sleep_data(day_str)
+                        if fetched_sleep:
+                            sleep_data = {
+                                "score": fetched_sleep.get("sleepScores", {}).get("overallScore") or 0,
+                                "hours": round(fetched_sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600, 1)
+                            }
+                            cache.set(sleep_key, sleep_data, expire=86400)
+                    except Exception:
+                        logger.warning(f"Could not fetch Sleep for {day_str}")
+
+                # Caching HR Zones for each activity
+                for act in day_activities:
+                    act_id = act.get("activityId")
+                    if not act_id:
+                        continue
+
+                    zones_key = f"zones_{act_id}"
+                    act_zones = cache.get(zones_key)
+                    if act_zones is None:
+                        try:
+                            act_zones = fetcher.get_activity_hr_zones(act_id)
+                            # Garmin returns list of dicts with zoneNumber, secsInZone
+                            cache.set(zones_key, act_zones, expire=604800) # Cache for 1 week
+                        except Exception:
+                            logger.warning(f"Could not fetch zones for activity {act_id}")
+                            act_zones = []
+
+                    if act_zones:
+                        for z in act_zones:
+                            idx = z.get("zoneNumber", 0)
+                            if 0 <= idx <= 5:
+                                weeks[week_name]["zones"][idx] += round(z.get("secsInZone", 0) / 60, 1)
 
                 aerobic_te = max([a.get("aerobicTrainingEffect", 0) for a in day_activities] + [0])
-                intensity = None
-                if aerobic_te >= 4:
-                    intensity = "high"
-                elif aerobic_te >= 3:
-                    intensity = "medium"
-                elif aerobic_te > 0:
-                    intensity = "low"
+                intensity = "high" if aerobic_te >= 4 else "medium" if aerobic_te >= 3 else "low" if aerobic_te > 0 else None
 
-                weeks[week_name].append({
+                weeks[week_name]["days"].append({
                     "date": day_str,
                     "day_label": day_date.strftime("%a").upper(),
                     "full_day": day_date.strftime("%A"),
                     "distance": sum(a.get("distance", 0) for a in day_activities) / 1000.0,
                     "count": len(day_activities),
                     "rhr": rhr,
-                    "sleep_hours": sleep_hours,
-                    "sleep_score": sleep_score,
+                    "sleep_hours": sleep_data.get("hours") if sleep_data else 0,
+                    "sleep_score": sleep_data.get("score") if sleep_data else 0,
                     "training_intensity": intensity,
                     "aerobic_te": aerobic_te,
                 })
@@ -279,7 +313,6 @@ async def get_weekly_stats(
     except Exception as e:
         logger.error(f"Error in get_weekly_stats: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
-
 
 if __name__ == "__main__":
     import uvicorn

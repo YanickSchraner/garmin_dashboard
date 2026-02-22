@@ -34,7 +34,7 @@
             <span class="panel-eyebrow">RECENT</span>
             <h2 class="panel-title">Activities</h2>
           </div>
-          <button class="view-all-btn">
+          <button class="view-all-btn" @click="navigateTo('/activities')">
             VIEW ALL
             <span class="btn-arrow">→</span>
           </button>
@@ -60,6 +60,8 @@
             v-else
             :data="activities"
             :columns="activityColumns"
+            class="clickable-table"
+            @select="(_, row) => navigateTo(`/activities/${row.original.activityId}`)"
           >
             <template #activityName-cell="{ row }">
               <div class="cell-activity">

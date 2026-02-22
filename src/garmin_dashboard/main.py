@@ -97,6 +97,50 @@ async def get_profile(
     return {"display_name": name}
 
 
+@app.get("/activities/recent")
+async def get_recent_activities(
+    limit: int = Query(25, ge=1, le=100, description="Number of most recent activities to return"),
+    fetcher: GarminFetcher = Depends(get_fetcher),
+):
+    """Get most recent activities, newest first."""
+    try:
+        return fetcher.get_recent_activities(limit)
+    except Exception as e:
+        logger.error(f"Error fetching recent activities: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/activities/{activity_id}")
+async def get_activity_detail(
+    activity_id: int,
+    fetcher: GarminFetcher = Depends(get_fetcher),
+):
+    """Get detailed stats for a single activity.
+
+    Aggregates summary, HR zones, and splits into one response.
+    Optional sub-calls (hr_zones, splits) fail gracefully — their key will be null.
+    """
+    try:
+        summary = fetcher.get_activity_summary(activity_id)
+    except Exception as e:
+        logger.error(f"Error fetching activity {activity_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    hr_zones = None
+    try:
+        hr_zones = fetcher.get_activity_hr_zones(activity_id)
+    except Exception as e:
+        logger.warning(f"Could not fetch HR zones for {activity_id}: {e}")
+
+    splits = None
+    try:
+        splits = fetcher.get_activity_splits_data(activity_id)
+    except Exception as e:
+        logger.warning(f"Could not fetch splits for {activity_id}: {e}")
+
+    return {"summary": summary, "hr_zones": hr_zones, "splits": splits}
+
+
 @app.get("/activities")
 async def get_activities(
     start_date: str = Query(..., description="ISO 8601 date YYYY-MM-DD"),

@@ -26,6 +26,26 @@ class GarminFetcher:
         logger.info("Fetching user full name from Garmin")
         return self.client.get_full_name()
 
+    def get_recent_activities(self, limit: int = 25) -> list:
+        """Fetch most recent activities, newest first."""
+        logger.info(f"Fetching {limit} most recent activities")
+        return self.client.get_activities(0, limit)
+
+    def get_activity_summary(self, activity_id: int) -> dict:
+        """Fetch a single activity's summary data."""
+        logger.info(f"Fetching activity summary for {activity_id}")
+        return self.client.get_activity(activity_id)
+
+    def get_activity_hr_zones(self, activity_id: int) -> list:
+        """Fetch heart rate zone breakdown for an activity."""
+        logger.info(f"Fetching HR zones for activity {activity_id}")
+        return self.client.get_activity_hr_in_timezones(activity_id)
+
+    def get_activity_splits_data(self, activity_id: int) -> dict:
+        """Fetch lap/split data for an activity."""
+        logger.info(f"Fetching splits for activity {activity_id}")
+        return self.client.get_activity_splits(activity_id)
+
 
 def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garminconnect") -> Garmin:
     """Initialize Garmin API following the example flow.

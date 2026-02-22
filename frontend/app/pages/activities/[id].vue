@@ -90,24 +90,6 @@
             </div>
 
             <div class="metric-row">
-              <span class="metric-name">Training Stress Score</span>
-              <div class="metric-right">
-                <span class="metric-val">{{ act?.trainingStressScore?.toFixed(0) ?? '—' }}</span>
-              </div>
-            </div>
-
-            <div class="metric-divider"></div>
-
-            <div class="metric-row">
-              <span class="metric-name">Recovery Time</span>
-              <div class="metric-right">
-                <span class="metric-val" :class="act?.recoveryTime ? 'metric-val--accent' : ''">
-                  {{ act?.recoveryTime ? act.recoveryTime + 'h' : '—' }}
-                </span>
-              </div>
-            </div>
-
-            <div class="metric-row">
               <span class="metric-name">Avg Cadence</span>
               <div class="metric-right">
                 <span class="metric-val">{{ act?.averageRunCadence?.toFixed(0) ?? '—' }}<span v-if="act?.averageRunCadence" class="metric-unit"> spm</span></span>
@@ -125,13 +107,6 @@
               <span class="metric-name">Elevation Gain</span>
               <div class="metric-right">
                 <span class="metric-val">{{ act?.elevationGain?.toFixed(0) ?? '—' }}<span v-if="act?.elevationGain" class="metric-unit"> m</span></span>
-              </div>
-            </div>
-
-            <div class="metric-row">
-              <span class="metric-name">VO2 Max</span>
-              <div class="metric-right">
-                <span class="metric-val">{{ act?.vO2MaxValue?.toFixed(1) ?? '—' }}</span>
               </div>
             </div>
           </div>

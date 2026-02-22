@@ -25,7 +25,7 @@
 - [x] **Task: Connect Frontend to Backend API** (commit: 607878d)
     - [ ] Use `useFetch` to retrieve data from the FastAPI backend.
     - [ ] Display activity data on the dashboard.
-- [~] **Task: Finalize Core Dashboard View**
+- [x] **Task: Finalize Core Dashboard View** (commit: 7c7477b)
     - [ ] Polish the single-page view with TailwindCSS.
     - [ ] Verify health-wellness design principles from product guidelines.
-- [ ] **Task: Conductor - User Manual Verification 'Integration' (Protocol in workflow.md)**
+- [~] **Task: Conductor - User Manual Verification 'Integration' (Protocol in workflow.md)**

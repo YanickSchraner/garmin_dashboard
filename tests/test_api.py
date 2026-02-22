@@ -1,6 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+import os
+
+@pytest.fixture(autouse=True)
+def mock_env():
+    with patch.dict(os.environ, {"EMAIL": "test@example.com", "PASSWORD": "password"}):
+        yield
 
 @pytest.fixture
 def client():
@@ -15,6 +21,7 @@ def test_get_activities_endpoint(client):
         ]
         
         with patch("garmin_dashboard.fetcher.GarminFetcher.login") as mock_login:
+            mock_login.return_value = True
             response = client.get("/activities?start_date=2026-01-01&end_date=2026-01-02")
             
             assert response.status_code == 200
@@ -31,6 +38,7 @@ def test_get_health_stats_endpoint(client):
         }
         
         with patch("garmin_dashboard.fetcher.GarminFetcher.login") as mock_login:
+            mock_login.return_value = True
             response = client.get("/health-stats?date=2026-01-01")
             
             assert response.status_code == 200
@@ -43,6 +51,7 @@ def test_get_goal_status_endpoint(client):
         mock_get_activities.return_value = [{"activityType": {"typeKey": "running"}}] * 10
         
         with patch("garmin_dashboard.fetcher.GarminFetcher.login") as mock_login:
+            mock_login.return_value = True
             response = client.get("/goal-status?year=2026")
             
             assert response.status_code == 200
@@ -58,3 +67,11 @@ def test_login_failure_401(client):
         response = client.get("/activities?start_date=2026-01-01&end_date=2026-01-02")
         assert response.status_code == 401
         assert "Garmin Authentication Error" in response.json()["detail"]
+
+def test_login_mfa_403(client):
+    """Test that MFA requirement returns 403."""
+    with patch("garmin_dashboard.fetcher.GarminFetcher.login") as mock_login:
+        mock_login.return_value = "needs_mfa"
+        response = client.get("/activities?start_date=2026-01-01&end_date=2026-01-02")
+        assert response.status_code == 403
+        assert "MFA Required" in response.json()["detail"]

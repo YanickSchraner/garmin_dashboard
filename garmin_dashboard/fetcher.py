@@ -6,33 +6,30 @@ from garth.exc import GarthException
 class GarminFetcher:
     """Class to fetch data from Garmin Connect using garminconnect with session support."""
     
-    def __init__(self, email: str, password: str, token_store: str = "conductor/garmin_tokens"):
+    def __init__(self, email: str, password: str, token_store: str = "~/.garminconnect"):
         self.email = email
         self.password = password
         self.token_store = os.path.expanduser(token_store)
         self.client = Garmin(self.email, self.password)
 
-    def login(self, prompt_mfa=None):
+    def login(self):
         """Log in to Garmin Connect or resume session."""
         try:
             # Ensure the token store directory exists
             os.makedirs(self.token_store, exist_ok=True)
             
-            # Use is_cn=False for global accounts
-            self.client = Garmin(self.email, self.password, is_cn=False, prompt_mfa=prompt_mfa)
+            logger.info(f"Attempting login/session resume for {self.email} using {self.token_store}")
             
-            # Try to load session
-            if os.path.exists(os.path.join(self.token_store, "oauth2_token.json")):
-                logger.info(f"Loading session from {self.token_store}")
-                self.client.garth.load(self.token_store)
+            # The login method handles loading and saving tokens if tokenstore is provided
+            # It returns True if logged in, or "needs_mfa" if MFA is required
+            result = self.client.login(self.token_store)
             
-            # Login/Resume
-            logger.info(f"Attempting login/session resume for {self.email}")
-            self.client.login()
+            if result == "needs_mfa":
+                logger.warning("MFA required for Garmin login")
+                return "needs_mfa"
             
-            # Save session
-            self.client.garth.dump(self.token_store)
-            logger.info("Successfully logged in to Garmin Connect and saved session")
+            logger.info("Successfully logged in to Garmin Connect")
+            return True
             
         except GarthException as e:
             msg = str(e)

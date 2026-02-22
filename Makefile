@@ -15,7 +15,7 @@ dev:
 
 dev-backend:
 	@echo "Starting FastAPI backend..."
-	uv run python main.py
+	uv run --env-file .env python main.py
 
 dev-frontend:
 	@echo "Starting Nuxt 4 frontend..."

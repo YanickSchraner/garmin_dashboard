@@ -4,10 +4,6 @@ from garmin_dashboard.fetcher import GarminFetcher
 from datetime import datetime
 import os
 from loguru import logger
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 app = FastAPI(title="Garmin Custom Dashboard API")
 
@@ -15,7 +11,7 @@ app = FastAPI(title="Garmin Custom Dashboard API")
 LOG_FILE = "garmin.log"
 logger.add(LOG_FILE, rotation="10 MB", level="INFO")
 
-# Configure CORS for Nuxt 3 frontend
+# Configure CORS for Nuxt 4 frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Adjust this for production
@@ -24,24 +20,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In a real app, use a secure way to handle credentials.
-GARMIN_EMAIL = os.getenv("GARMIN_EMAIL", "test@example.com")
-GARMIN_PASSWORD = os.getenv("GARMIN_PASSWORD", "password")
-# Path where we store the session tokens
-GARMIN_TOKEN_STORE = os.getenv("GARMIN_TOKEN_STORE", "conductor/garmin_tokens")
+# Environment variables are passed via uv run --env-file .env
+EMAIL = os.getenv("EMAIL")
+PASSWORD = os.getenv("PASSWORD")
+TOKEN_STORE = os.getenv("GARMIN_TOKEN_STORE", "~/.garminconnect")
 
 def get_fetcher():
-    """Dependency to get a logged-in GarminFetcher with session support."""
-    fetcher = GarminFetcher(GARMIN_EMAIL, GARMIN_PASSWORD, token_store=GARMIN_TOKEN_STORE)
+    """Dependency to get a logged-in GarminFetcher."""
+    if not EMAIL or not PASSWORD:
+        logger.error("EMAIL or PASSWORD environment variables not set")
+        raise HTTPException(status_code=500, detail="Server configuration error: Credentials missing")
+
+    fetcher = GarminFetcher(EMAIL, PASSWORD, token_store=TOKEN_STORE)
     try:
-        fetcher.login()
+        result = fetcher.login()
+        if result == "needs_mfa":
+            logger.warning("MFA required for Garmin login")
+            raise HTTPException(
+                status_code=403, 
+                detail="MFA Required. Please run the CLI login first to generate tokens."
+            )
         return fetcher
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Login failed: {e}")
         # Return 401 if it's an authentication error
-        if "authentication failed" in str(e).lower() or "unexpected title" in str(e).lower():
+        if "authentication failed" in str(e).lower() or "sso error" in str(e).lower():
             raise HTTPException(status_code=401, detail=f"Garmin Authentication Error: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error during Garmin Login")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error during Garmin Login: {e}")
 
 @app.get("/activities")
 async def get_activities(

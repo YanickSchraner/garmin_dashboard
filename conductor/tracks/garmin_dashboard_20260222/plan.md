@@ -16,10 +16,10 @@
     - [ ] Set up Nuxt 3 project using `npx nuxi init`.
     - [ ] Install and configure Nuxt UI.
     - [ ] Create basic layout with navigation and main content area.
-- [~] **Task: Create Dashboard Shell Components**
+- [x] **Task: Create Dashboard Shell Components** (commit: ac03af8)
     - [ ] Implement `RunGoalProgress` component using Nuxt UI.
     - [ ] Implement `WeeklySummary` component shell.
-- [ ] **Task: Conductor - User Manual Verification 'Frontend Setup' (Protocol in workflow.md)**
+- [~] **Task: Conductor - User Manual Verification 'Frontend Setup'
 
 ## Phase 3: Integration
 - [ ] **Task: Connect Frontend to Backend API**

@@ -7,6 +7,10 @@ from loguru import logger
 
 app = FastAPI(title="Garmin Custom Dashboard API")
 
+# Configure loguru to write to a file
+LOG_FILE = "conductor/garmin.log"
+logger.add(LOG_FILE, rotation="10 MB", level="INFO")
+
 # Configure CORS for Nuxt 3 frontend
 app.add_middleware(
     CORSMiddleware,

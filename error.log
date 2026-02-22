@@ -1,0 +1,139 @@
+UI Logs:
+
+  Nuxt 4.3.1 (with Nitro 2.13.1, Vite 7.3.1 and Vue 3.5.28)
+[12:47:11 PM] 
+  ➜ Local:    http://localhost:3000/
+  ➜ Network:  use --host to expose
+
+[12:47:11 PM]   ➜ DevTools: press Shift + Alt + D in the browser (v3.2.1)
+
+[12:47:11 PM] ℹ Nuxt Icon server bundle mode is set to local
+[12:47:12 PM] ✔ Nuxt Icon discovered local-installed 1 collections: heroicons
+[12:47:12 PM] ℹ Re-optimizing dependencies because lockfile has changed
+[12:47:12 PM] ✔ Vite client built in 21ms
+[12:47:12 PM] ✔ Vite server built in 25ms
+[nitro 12:47:13 PM] ✔ Nuxt Nitro server built in 292ms
+[12:47:13 PM] ℹ Vite server warmed up in 0ms
+[12:47:13 PM] ℹ Vite client warmed up in 1ms
+[12:47:17 PM]  WARN  [Vue warn]: Failed to resolve component: RunGoalProgress
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:17 PM]  WARN  [Vue warn]: Failed to resolve component: WeeklySummary
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:17 PM]  WARN  [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:17 PM]  WARN  [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:22 PM]  WARN  [Vue warn]: Failed to resolve component: RunGoalProgress
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:22 PM]  WARN  [Vue warn]: Failed to resolve component: WeeklySummary
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:22 PM]  WARN  [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:22 PM]  WARN  [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <ToastProvider>
+at <Toaster>
+at <TooltipProvider>
+at <ConfigProvider>
+at <App>
+at <App>
+at <NuxtRoot>
+[12:47:23 PM] ℹ ✨ new dependencies optimized: @vue/devtools-core, @vue/devtools-kit
+
+
+
+FastAPI Logs
+yanick  uv run python main.py
+INFO:     Started server process [504979]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-02-22 12:47:15.334 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:47:15.335 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:47:16.218 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:47:16.218 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+INFO:     127.0.0.1:46232 - "GET /goal-status?year=2026 HTTP/1.1" 401 Unauthorized
+2026-02-22 12:47:16.235 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:47:16.544 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:47:16.544 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+INFO:     127.0.0.1:46242 - "GET /goal-status?year=2026 HTTP/1.1" 401 Unauthorized
+2026-02-22 12:47:16.554 | INFO     | garmin_dashboard.fetcher:login:27 - Attempting login/session resume for test@example.com
+2026-02-22 12:47:17.073 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:47:17.073 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+INFO:     127.0.0.1:46258 - "GET /activities?start_date=2026-02-01&end_date=2026-02-22 HTTP/1.1" 401 Unauthorized
+2026-02-22 12:47:22.326 | ERROR    | garmin_dashboard.fetcher:login:35 - Garth authentication error: Unexpected title: GARMIN Authentication Application
+2026-02-22 12:47:22.327 | ERROR    | __main__:get_fetcher:36 - Login failed: Garmin authentication failed: Unexpected title: GARMIN Authentication Application
+INFO:     127.0.0.1:46232 - "GET /activities?start_date=2026-02-01&end_date=2026-02-22 HTTP/1.1" 401 Unauthorized

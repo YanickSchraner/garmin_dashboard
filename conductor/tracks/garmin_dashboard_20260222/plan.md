@@ -9,7 +9,7 @@
     - [ ] Implement `GarminFetcher` class to handle API requests.
     - [ ] Integrate authentication using Garmin Connect credentials.
     - [ ] Add endpoints to FastAPI to expose fetched data.
-- [ ] **Task: Conductor - User Manual Verification 'Backend Setup' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Backend Setup' (checkpoint: 77c16e2)
 
 ## Phase 2: Frontend Setup
 - [ ] **Task: Initialize Nuxt 3 Frontend with Nuxt UI**

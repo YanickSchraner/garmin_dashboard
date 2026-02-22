@@ -12,3 +12,4 @@ wheels/
 .coverage
 
 *.log
+conductor/garmin_tokens

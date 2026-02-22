@@ -11,6 +11,10 @@
             <span class="logo-text">GARMIN<em>DASH</em></span>
           </div>
           <div class="header-right">
+            <div v-if="displayName" class="header-user">
+              <span class="user-greeting">Welcome back,</span>
+              <span class="user-name">{{ displayName }}</span>
+            </div>
             <span class="header-tag">PERSONAL ATHLETICS</span>
             <UColorModeButton />
           </div>
@@ -29,7 +33,11 @@
 </template>
 
 <script setup>
-// Global layout
+const { data: profile } = await useFetch('http://localhost:8000/me', {
+  default: () => ({ display_name: null })
+})
+
+const displayName = computed(() => profile.value?.display_name || null)
 </script>
 
 <style>
@@ -153,6 +161,30 @@ html, body {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.header-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  border-right: 1px solid var(--border);
+  padding-right: 16px;
+}
+
+.user-greeting {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.user-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--text);
+  letter-spacing: 0.06em;
 }
 
 .header-tag {

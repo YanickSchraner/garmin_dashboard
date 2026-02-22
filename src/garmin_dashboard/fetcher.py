@@ -21,6 +21,11 @@ class GarminFetcher:
         logger.info(f"Fetching health stats for {date_str}")
         return self.client.get_stats(date_str)
 
+    def get_full_name(self) -> str | None:
+        """Fetch the authenticated user's full name from Garmin profile."""
+        logger.info("Fetching user full name from Garmin")
+        return self.client.get_full_name()
+
 
 def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garminconnect") -> Garmin:
     """Initialize Garmin API following the example flow.

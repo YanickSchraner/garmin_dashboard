@@ -1,9 +1,10 @@
-import os
 from datetime import datetime
+from functools import lru_cache
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from garmin_dashboard.fetcher import GarminFetcher, init_garmin
 
@@ -22,16 +23,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-EMAIL = os.getenv("EMAIL", "")
-PASSWORD = os.getenv("PASSWORD", "")
-TOKEN_STORE = os.getenv("GARMIN_TOKEN_STORE", "~/.garminconnect")
+
+class Settings(BaseSettings):
+    """Typed, validated application config — reads from env and .env file."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    email: str = ""
+    password: str = ""
+    garmin_token_store: str = "~/.garminconnect"
+
+    # Personalisation — used as fallback when Garmin API returns no name
+    display_name: str = ""
 
 
-def get_fetcher():
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+def get_fetcher(settings: Settings = Depends(get_settings)):
     """Dependency to get a logged-in GarminFetcher."""
     try:
-        # We use the init_garmin function which uses Garmin() directly
-        result = init_garmin(EMAIL, PASSWORD, TOKEN_STORE)
+        result = init_garmin(settings.email, settings.password, settings.garmin_token_store)
 
         if isinstance(result, tuple) and result[0] == "needs_mfa":
             logger.warning("MFA required for Garmin login")
@@ -44,7 +62,6 @@ def get_fetcher():
         raise
     except Exception as e:
         logger.error(f"Login failed: {e}")
-        # Return 401 if it's an authentication error
         if (
             "authentication failed" in str(e).lower()
             or "sso error" in str(e).lower()
@@ -52,6 +69,32 @@ def get_fetcher():
         ):
             raise HTTPException(status_code=401, detail=f"Garmin Authentication Error: {e}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error during Garmin Login: {e}")
+
+
+@app.get("/me")
+async def get_profile(
+    settings: Settings = Depends(get_settings),
+    fetcher: GarminFetcher = Depends(get_fetcher),
+):
+    """Return the user's display name.
+
+    Resolution order:
+    1. Garmin Connect profile full name
+    2. DISPLAY_NAME env / .env fallback
+    3. Generic 'Athlete' default
+    """
+    name: str | None = None
+    try:
+        name = fetcher.get_full_name()
+        logger.info(f"Resolved display name from Garmin: {name!r}")
+    except Exception as e:
+        logger.warning(f"Could not fetch name from Garmin: {e}")
+
+    if not name:
+        name = settings.display_name or "Athlete"
+        logger.info(f"Using fallback display name: {name!r}")
+
+    return {"display_name": name}
 
 
 @app.get("/activities")

@@ -1,7 +1,7 @@
 # Implementation Plan: Garmin Dashboard Core
 
 ## Phase 1: Backend Setup
-- [ ] **Task: Write Tests for Garmin Data Fetcher**
+- [x] **Task: Write Tests for Garmin Data Fetcher** (commit: d132897)
     - [ ] Create `tests/test_garmin_fetcher.py`.
     - [ ] Define tests for Garmin API authentication.
     - [ ] Define tests for activity data retrieval.

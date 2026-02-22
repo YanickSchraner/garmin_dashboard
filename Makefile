@@ -19,7 +19,7 @@ dev-backend:
 
 dev-frontend:
 	@echo "Starting Nuxt 4 frontend..."
-	cd frontend && bun run dev | tee -a frontend.log
+	cd frontend && bun run dev | tee -a ../frontend.log
 
 # --- Testing ---
 test: test-backend test-frontend

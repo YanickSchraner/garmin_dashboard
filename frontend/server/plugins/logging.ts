@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { consola } from 'consola'
 
 export default defineNitroPlugin((nitroApp) => {
-  const logPath = join(process.cwd(), '../conductor/frontend.log')
+  const logPath = join(process.cwd(), '../frontend.log')
   
   // Ensure directory exists
   mkdirSync(dirname(logPath), { recursive: true })

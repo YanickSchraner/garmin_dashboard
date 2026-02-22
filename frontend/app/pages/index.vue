@@ -2,15 +2,25 @@
   <div class="space-y-10 max-w-5xl mx-auto">
     <!-- Annual Goal Section -->
     <section>
+      <div v-if="statusError" class="mb-6">
+        <UAlert
+          color="red"
+          variant="soft"
+          icon="i-heroicons-exclamation-triangle-20-solid"
+          title="Backend Connection Failed"
+          :description="statusError.data?.detail || 'Could not connect to the Garmin Dashboard API. Ensure the backend server is running.'"
+        />
+      </div>
+
       <RunGoalProgress 
-        :goal="104"
-        :actual="0"
-        :target-to-date="15.4"
-        :percent="0"
-        status="behind"
-        :year="2026"
-        :loading="false"
-        @refresh="onRefresh"
+        :goal="goalStatus?.goal || 104"
+        :actual="goalStatus?.actual || 0"
+        :target-to-date="goalStatus?.expected_to_date || 0"
+        :percent="goalStatus?.progress_percent || 0"
+        :status="goalStatus?.status || 'behind'"
+        :year="goalStatus?.year || 2026"
+        :loading="statusLoading"
+        @refresh="refreshData"
       />
     </section>
 
@@ -34,7 +44,22 @@
 </template>
 
 <script setup>
-const onRefresh = () => {
-  console.log('Refreshing Garmin data...')
+// Configure backend API URL
+const config = useRuntimeConfig()
+const apiBase = 'http://localhost:8000'
+
+// Fetch goal status
+const { 
+  data: goalStatus, 
+  pending: statusLoading, 
+  error: statusError,
+  refresh: refreshGoal 
+} = await useFetch(`${apiBase}/goal-status`, {
+  query: { year: 2026 },
+  immediate: true
+})
+
+const refreshData = async () => {
+  await refreshGoal()
 }
 </script>

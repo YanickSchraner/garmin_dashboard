@@ -1,18 +1,14 @@
 <template>
-  <div class="space-y-10 max-w-5xl mx-auto">
-    <!-- Annual Goal Section -->
-    <section>
-      <div v-if="statusError" class="mb-6">
-        <UAlert
-          color="red"
-          variant="soft"
-          icon="i-heroicons-exclamation-triangle-20-solid"
-          title="Backend Connection Failed"
-          :description="statusError.data?.detail || 'Could not connect to the Garmin Dashboard API. Ensure the backend server is running.'"
-        />
-      </div>
+  <div class="dashboard">
+    <!-- Error banner -->
+    <div v-if="statusError" class="error-banner">
+      <span class="error-icon">⚠</span>
+      <span>Backend offline — {{ statusError.data?.detail || 'Could not connect to Garmin Dashboard API' }}</span>
+    </div>
 
-      <RunGoalProgress 
+    <!-- Goal Hero -->
+    <section>
+      <RunGoalProgress
         :goal="goalStatus?.goal || 104"
         :actual="goalStatus?.actual || 0"
         :target-to-date="goalStatus?.expected_to_date || 0"
@@ -24,79 +20,101 @@
       />
     </section>
 
-    <!-- Weekly Performance Section -->
+    <!-- Weekly Stats -->
     <section>
       <WeeklySummary />
     </section>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
-      <!-- Recent Activities List -->
-      <section class="lg:col-span-2">
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold">Recent Activities</h2>
-              <UButton variant="link" color="primary" size="sm">View All</UButton>
-            </div>
-          </template>
+    <!-- Bottom grid -->
+    <div class="bottom-grid">
+      <!-- Recent Activities -->
+      <section class="activities-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-eyebrow">RECENT</span>
+            <h2 class="panel-title">Activities</h2>
+          </div>
+          <button class="view-all-btn">
+            VIEW ALL
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
 
-          <UTable 
-            :rows="activities || []" 
-            :columns="activityColumns" 
-            :loading="activitiesLoading"
+        <div class="table-wrap">
+          <div v-if="activitiesLoading" class="table-loading">
+            <div class="loading-rows">
+              <div v-for="n in 5" :key="n" class="loading-row">
+                <div class="loading-cell w-half shimmer"></div>
+                <div class="loading-cell w-quarter shimmer"></div>
+                <div class="loading-cell w-fifth shimmer"></div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="!activities || activities.length === 0" class="table-empty">
+            <div class="empty-icon">⬡</div>
+            <p class="empty-text">No recent activities — time to hit the road.</p>
+          </div>
+
+          <UTable
+            v-else
+            :data="activities"
+            :columns="activityColumns"
           >
-            <template #activityName-data="{ row }">
-              <div class="flex items-center gap-2">
-                <UIcon 
-                  :name="getActivityIcon(row.activityType?.typeKey)" 
-                  class="w-4 h-4 text-primary-500" 
-                />
-                <span class="font-medium text-gray-900 dark:text-white">{{ row.activityName }}</span>
+            <template #activityName-cell="{ row }">
+              <div class="cell-activity">
+                <div class="activity-type-dot" :style="{ background: getActivityColor(row.original.activityType?.typeKey) }"></div>
+                <span class="activity-name">{{ row.original.activityName }}</span>
               </div>
             </template>
-            <template #startTimeLocal-data="{ row }">
-              <span class="text-gray-500 text-xs">{{ formatDate(row.startTimeLocal) }}</span>
+            <template #startTimeLocal-cell="{ row }">
+              <span class="cell-date">{{ formatDate(row.original.startTimeLocal) }}</span>
             </template>
-            <template #distance-data="{ row }">
-              <span class="font-semibold">{{ (row.distance / 1000).toFixed(2) }} km</span>
+            <template #distance-cell="{ row }">
+              <span class="cell-distance">{{ (row.original.distance / 1000).toFixed(2) }}<span class="cell-unit"> km</span></span>
             </template>
           </UTable>
-
-          <div v-if="!activitiesLoading && (!activities || activities.length === 0)" class="py-10 text-center text-gray-400 italic">
-            No recent activities found. Time to lace up those shoes!
-          </div>
-        </UCard>
+        </div>
       </section>
 
-      <!-- Health Trends Sidebar -->
-      <section class="space-y-8">
-        <UCard class="bg-gradient-to-br from-primary-50 to-white dark:from-gray-800 dark:to-gray-900 border-primary-100 dark:border-gray-700">
-          <div class="flex items-center gap-3 mb-4">
-            <UIcon name="i-heroicons-fire-20-solid" class="w-6 h-6 text-primary-500" />
-            <h2 class="text-lg font-semibold">Health Trends</h2>
+      <!-- Health Snapshot -->
+      <section class="health-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <span class="panel-eyebrow">2026 TRENDS</span>
+            <h2 class="panel-title">Health</h2>
           </div>
-          <div class="space-y-4">
-            <div>
-              <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">RHR Improvement</p>
-              <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-bold">-4 bpm</span>
-                <span class="text-xs text-green-600 font-medium">this year</span>
-              </div>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Avg Sleep</p>
-              <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-bold">7h 12m</span>
-                <span class="text-xs text-blue-600 font-medium">+18m vs 2025</span>
-              </div>
-            </div>
-          </div>
-        </UCard>
+        </div>
 
-        <UCard>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 italic text-center">"Consistency is the key to progress."</h3>
-          <p class="text-xs text-gray-500 text-center">You are currently {{ goalStatus?.status === 'ahead' ? 'ahead of' : 'working towards' }} your 104-run goal. Keep moving!</p>
-        </UCard>
+        <div class="health-metrics">
+          <div class="health-metric">
+            <div class="hm-label">RHR IMPROVEMENT</div>
+            <div class="hm-value">
+              <span class="hm-num">-4</span>
+              <span class="hm-unit">BPM</span>
+            </div>
+            <div class="hm-desc">since January 2026</div>
+            <div class="hm-bar"><div class="hm-bar-fill" style="width: 72%"></div></div>
+          </div>
+
+          <div class="hm-separator"></div>
+
+          <div class="health-metric">
+            <div class="hm-label">AVG SLEEP DURATION</div>
+            <div class="hm-value">
+              <span class="hm-num">7h 12m</span>
+            </div>
+            <div class="hm-desc">+18m vs 2025</div>
+            <div class="hm-bar"><div class="hm-bar-fill hm-bar--blue" style="width: 60%"></div></div>
+          </div>
+        </div>
+
+        <div class="motivation-block">
+          <div class="motivation-quote">"Consistency is the key to progress."</div>
+          <div class="motivation-sub">
+            You are {{ goalStatus?.status === 'ahead' ? 'ahead of schedule' : 'working towards' }} your {{ goalStatus?.goal || 104 }}-run goal. Keep moving.
+          </div>
+        </div>
       </section>
     </div>
   </div>
@@ -105,49 +123,384 @@
 <script setup>
 const apiBase = 'http://localhost:8000'
 
-// Fetch goal status
-const { 
-  data: goalStatus, 
-  pending: statusLoading, 
+const {
+  data: goalStatus,
+  pending: statusLoading,
   error: statusError,
-  refresh: refreshGoal 
+  refresh: refreshGoal
 } = await useFetch(`${apiBase}/goal-status`, {
   query: { year: 2026 },
   immediate: true
 })
 
-// Fetch recent activities
 const {
   data: activities,
   pending: activitiesLoading,
   refresh: refreshActivities
 } = await useFetch(`${apiBase}/activities`, {
-  query: { 
-    start_date: '2026-02-01', 
-    end_date: '2026-02-22' 
+  query: {
+    start_date: '2026-02-01',
+    end_date: '2026-02-22'
   },
   immediate: true
 })
 
 const activityColumns = [
-  { key: 'activityName', label: 'Activity' },
-  { key: 'startTimeLocal', label: 'Date' },
-  { key: 'distance', label: 'Distance' }
+  { accessorKey: 'activityName', header: 'Activity' },
+  { accessorKey: 'startTimeLocal', header: 'Date' },
+  { accessorKey: 'distance', header: 'Distance' }
 ]
 
-const getActivityIcon = (type) => {
-  if (type === 'running') return 'i-heroicons-bolt-20-solid'
-  if (type === 'cycling') return 'i-heroicons-map-20-solid'
-  return 'i-heroicons-user-20-solid'
+const getActivityColor = (type) => {
+  if (type === 'running') return 'var(--accent)'
+  if (type === 'cycling') return 'var(--blue)'
+  return 'var(--muted-light)'
 }
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return '--'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric'
+  }).toUpperCase()
 }
 
 const refreshData = async () => {
   await Promise.all([refreshGoal(), refreshActivities()])
 }
 </script>
+
+<style scoped>
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Error banner */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 69, 33, 0.08);
+  border: 1px solid rgba(255, 69, 33, 0.25);
+  border-radius: 4px;
+  padding: 12px 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.error-icon { font-size: 14px; }
+
+/* Bottom grid */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .bottom-grid { grid-template-columns: 1fr; }
+}
+
+/* Panel shared */
+.activities-panel,
+.health-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--raised);
+}
+
+.panel-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: var(--muted);
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--text);
+  letter-spacing: 0.05em;
+}
+
+.view-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted-light);
+  background: transparent;
+  border: 1px solid var(--border-light);
+  padding: 5px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.view-all-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-arrow { transition: transform 0.2s; }
+.view-all-btn:hover .btn-arrow { transform: translateX(3px); }
+
+/* Table */
+.table-wrap { padding: 4px 0; }
+
+.table-loading { padding: 16px 24px; }
+
+.loading-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.loading-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.loading-cell {
+  height: 12px;
+  border-radius: 2px;
+  background: var(--raised);
+}
+
+.w-half    { flex: 2; }
+.w-quarter { flex: 1; }
+.w-fifth   { flex: 0.6; }
+
+.shimmer {
+  background: linear-gradient(90deg, var(--raised) 25%, var(--border) 50%, var(--raised) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  gap: 10px;
+}
+
+.empty-icon {
+  font-size: 28px;
+  color: var(--border-light);
+}
+
+.empty-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Table cell overrides */
+.cell-activity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activity-type-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.activity-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cell-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted-light);
+}
+
+.cell-distance {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--text);
+}
+
+.cell-unit {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted-light);
+}
+
+/* Health panel */
+.health-metrics {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.health-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 0;
+}
+
+.hm-separator {
+  height: 1px;
+  background: var(--border);
+}
+
+.hm-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.hm-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.hm-num {
+  font-family: var(--font-display);
+  font-size: 38px;
+  color: var(--green);
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.hm-unit {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--green);
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+}
+
+.hm-desc {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted-light);
+  margin-top: 1px;
+}
+
+.hm-bar {
+  height: 3px;
+  background: var(--border-light);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.hm-bar-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 1s ease;
+}
+
+.hm-bar--blue { background: var(--blue); }
+
+.motivation-block {
+  margin: 0 24px 20px;
+  padding: 14px 16px;
+  background: var(--raised);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+
+.motivation-quote {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 8px;
+  opacity: 0.85;
+}
+
+.motivation-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted-light);
+  line-height: 1.6;
+}
+</style>
+
+<style>
+/* Global UTable overrides for dark theme */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead tr {
+  background: var(--raised) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+thead th {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.2em !important;
+  color: var(--muted) !important;
+  text-transform: uppercase !important;
+  padding: 10px 16px !important;
+  font-weight: 500 !important;
+  background: var(--raised) !important;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border) !important;
+  transition: background 0.15s !important;
+}
+
+tbody tr:hover { background: var(--raised) !important; }
+tbody tr:last-child { border-bottom: none !important; }
+
+tbody td {
+  padding: 12px 16px !important;
+  background: transparent !important;
+  color: var(--text) !important;
+}
+</style>

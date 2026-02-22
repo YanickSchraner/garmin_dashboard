@@ -1,50 +1,236 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold">Weekly Performance</h2>
-      <UBadge color="gray" variant="solid">Week 8</UBadge>
+  <div class="weekly-wrap">
+    <div class="weekly-header">
+      <div class="weekly-title-group">
+        <h2 class="weekly-title">WEEKLY PERFORMANCE</h2>
+        <span class="weekly-week">WK {{ currentWeek }}</span>
+      </div>
+      <div class="weekly-period">
+        <span class="period-icon">◈</span>
+        {{ weekRange }}
+      </div>
     </div>
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <UCard class="bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30">
-        <div class="flex flex-col items-center gap-2 py-2">
-          <UIcon name="i-heroicons-moon-20-solid" class="w-8 h-8 text-blue-500" />
-          <h3 class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase">Sleep Quality</h3>
-          <p class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">7h 45m</p>
-          <span class="text-[10px] text-blue-500 font-semibold">+15m from last week</span>
+    <div class="stats-strip">
+      <div class="stat-item">
+        <div class="stat-icon-wrap stat-icon--sleep">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" fill="currentColor"/>
+          </svg>
         </div>
-      </UCard>
+        <div class="stat-content">
+          <div class="stat-value">7<span class="stat-unit">h</span> 45<span class="stat-unit">m</span></div>
+          <div class="stat-label">AVG SLEEP</div>
+          <div class="stat-delta stat-delta--pos">+15m vs last week</div>
+        </div>
+      </div>
 
-      <UCard class="bg-red-50/50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30">
-        <div class="flex flex-col items-center gap-2 py-2">
-          <UIcon name="i-heroicons-heart-20-solid" class="w-8 h-8 text-red-500" />
-          <h3 class="text-xs font-medium text-red-600 dark:text-red-400 uppercase">Avg RHR</h3>
-          <p class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">52 bpm</p>
-          <span class="text-[10px] text-green-600 font-semibold">-2 bpm (Improved)</span>
-        </div>
-      </UCard>
+      <div class="stat-divider"></div>
 
-      <UCard class="bg-green-50/50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30">
-        <div class="flex flex-col items-center gap-2 py-2">
-          <UIcon name="i-heroicons-bolt-20-solid" class="w-8 h-8 text-green-500" />
-          <h3 class="text-xs font-medium text-green-600 dark:text-green-400 uppercase">Trainings</h3>
-          <p class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">3 sessions</p>
-          <span class="text-[10px] text-green-600 font-semibold">Goal reached</span>
+      <div class="stat-item">
+        <div class="stat-icon-wrap stat-icon--heart">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
+          </svg>
         </div>
-      </UCard>
+        <div class="stat-content">
+          <div class="stat-value">52<span class="stat-unit">bpm</span></div>
+          <div class="stat-label">RESTING HR</div>
+          <div class="stat-delta stat-delta--pos">-2 bpm improved</div>
+        </div>
+      </div>
 
-      <UCard class="bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/30">
-        <div class="flex flex-col items-center gap-2 py-2">
-          <UIcon name="i-heroicons-fire-20-solid" class="w-8 h-8 text-indigo-500" />
-          <h3 class="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase">Total Dist</h3>
-          <p class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">28.4 km</p>
-          <span class="text-[10px] text-indigo-500 font-semibold">Keep it up!</span>
+      <div class="stat-divider"></div>
+
+      <div class="stat-item">
+        <div class="stat-icon-wrap stat-icon--sessions">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+          </svg>
         </div>
-      </UCard>
+        <div class="stat-content">
+          <div class="stat-value">3<span class="stat-unit">runs</span></div>
+          <div class="stat-label">TRAININGS</div>
+          <div class="stat-delta stat-delta--goal">Goal reached</div>
+        </div>
+      </div>
+
+      <div class="stat-divider"></div>
+
+      <div class="stat-item">
+        <div class="stat-icon-wrap stat-icon--distance">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">28.4<span class="stat-unit">km</span></div>
+          <div class="stat-label">TOTAL DIST</div>
+          <div class="stat-delta stat-delta--pos">+3.2 km vs last week</div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-// Weekly summary component
+const currentWeek = computed(() => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 1)
+  return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7)
+})
+
+const weekRange = computed(() => {
+  const now = new Date()
+  const day = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+
+  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return `${fmt(monday)} — ${fmt(sunday)}`.toUpperCase()
+})
 </script>
+
+<style scoped>
+.weekly-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.weekly-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--raised);
+}
+
+.weekly-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.weekly-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--muted-light);
+  font-weight: 500;
+}
+
+.weekly-week {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
+.weekly-period {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.period-icon { color: var(--accent); font-size: 12px; }
+
+.stats-strip {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  align-items: stretch;
+  padding: 0;
+}
+
+@media (max-width: 640px) {
+  .stats-strip {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .stat-divider { display: none; }
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 28px;
+  transition: background 0.2s;
+}
+
+.stat-item:hover { background: var(--raised); }
+
+.stat-divider {
+  width: 1px;
+  background: var(--border);
+  margin: 18px 0;
+}
+
+.stat-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon-wrap svg { width: 18px; height: 18px; }
+
+.stat-icon--sleep    { background: var(--blue-soft);   color: var(--blue); }
+.stat-icon--heart    { background: rgba(255,69,33,0.12); color: var(--accent); }
+.stat-icon--sessions { background: var(--green-soft);  color: var(--green); }
+.stat-icon--distance { background: var(--amber-soft);  color: var(--amber); }
+
+.stat-content { display: flex; flex-direction: column; gap: 2px; }
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 30px;
+  color: var(--text);
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.stat-unit {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted-light);
+  letter-spacing: 0.05em;
+  margin-left: 2px;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.stat-delta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+}
+
+.stat-delta--pos  { color: var(--green); }
+.stat-delta--neg  { color: var(--accent); }
+.stat-delta--goal {
+  color: var(--green);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+</style>

@@ -12,7 +12,7 @@
     </div>
 
     <div class="stats-strip">
-      <div class="stat-item">
+      <div class="stat-item" @click="navigateTo('/stats/sleep')">
         <div class="stat-icon-wrap stat-icon--sleep">
           <svg viewBox="0 0 20 20" fill="none">
             <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" fill="currentColor"/>
@@ -27,7 +27,7 @@
 
       <div class="stat-divider"></div>
 
-      <div class="stat-item">
+      <div class="stat-item" @click="navigateTo('/stats/hr')">
         <div class="stat-icon-wrap stat-icon--heart">
           <svg viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
@@ -42,7 +42,7 @@
 
       <div class="stat-divider"></div>
 
-      <div class="stat-item">
+      <div class="stat-item" @click="navigateTo('/stats/sessions')">
         <div class="stat-icon-wrap stat-icon--sessions">
           <svg viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
@@ -57,7 +57,7 @@
 
       <div class="stat-divider"></div>
 
-      <div class="stat-item">
+      <div class="stat-item" @click="navigateTo('/stats/distance')">
         <div class="stat-icon-wrap stat-icon--distance">
           <svg viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
@@ -164,6 +164,7 @@ const weekRange = computed(() => {
   gap: 16px;
   padding: 22px 28px;
   transition: background 0.2s;
+  cursor: pointer;
 }
 
 .stat-item:hover { background: var(--raised); }

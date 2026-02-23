@@ -13,3 +13,6 @@ wheels/
 
 *.log
 conductor/garmin_tokens
+
+# Git worktrees
+.worktrees/

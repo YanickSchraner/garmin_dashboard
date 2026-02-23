@@ -1,20 +1,15 @@
 from datetime import datetime, timedelta
 from functools import lru_cache
-from pathlib import Path
 
-from diskcache import Cache
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from garmin_dashboard.cache import invalidate_user
 from garmin_dashboard.fetcher import GarminFetcher, init_garmin
 
 app = FastAPI(title="Garmin Custom Dashboard API")
-
-# Persistent cache for Garmin API results
-CACHE_DIR = Path.home() / ".garmin_cache"
-cache = Cache(str(CACHE_DIR))
 
 # Configure loguru to write to a file
 LOG_FILE = "garmin.log"
@@ -63,7 +58,7 @@ def get_fetcher(settings: Settings = Depends(get_settings)):
                 status_code=403, detail="MFA Required. Please run the CLI login first to generate tokens."
             )
 
-        return GarminFetcher(result)
+        return GarminFetcher(result, user_email=settings.email)
     except HTTPException:
         raise
     except Exception as e:
@@ -110,6 +105,16 @@ async def get_profile(
         logger.info(f"Using fallback display name: {name!r}")
 
     return {"display_name": name}
+
+
+@app.post("/sync")
+async def sync_garmin(
+    settings: Settings = Depends(get_settings),
+):
+    """Invalidate all cached Garmin data for the current user."""
+    count = invalidate_user(settings.email)
+    logger.info(f"Cache invalidated for {settings.email}: {count} entries cleared")
+    return {"cleared": True}
 
 
 @app.get("/activities/recent")
@@ -250,59 +255,43 @@ async def get_weekly_stats(
 
                 day_activities = [a for a in all_activities if a.get("startTimeLocal", "").startswith(day_str)]
 
-                # Caching RHR
-                rhr_key = f"rhr_{day_str}"
-                rhr = cache.get(rhr_key)
-                if rhr is None:
-                    try:
-                        rhr_data = fetcher.get_rhr_day(day_str)
-                        rhr = rhr_data.get("restingHeartRate") if rhr_data else 0
-                        cache.set(rhr_key, rhr, expire=86400) # Cache for 1 day
-                    except Exception:
-                        logger.warning(f"Could not fetch RHR for {day_str}")
-                        rhr = 0
+                try:
+                    rhr_data = fetcher.get_rhr_day(day_str)
+                    rhr = rhr_data.get("restingHeartRate") if rhr_data else 0
+                except Exception:
+                    logger.warning(f"Could not fetch RHR for {day_str}")
+                    rhr = 0
 
-                # Caching Sleep
                 # Garmin records sleep on the wake-up date, so Monday night (Mon→Tue)
                 # is stored under Tuesday's date. Fetch day+1 to get that night's data.
                 sleep_date = (day_date + timedelta(days=1)).strftime("%Y-%m-%d")
-                sleep_key = f"sleep_{sleep_date}"
-                sleep_data = cache.get(sleep_key)
-                if sleep_data is None:
-                    sleep_data = {"score": 0, "hours": 0}
-                    try:
-                        fetched_sleep = fetcher.get_sleep_data(sleep_date)
-                        if fetched_sleep:
-                            raw_score = fetched_sleep.get("sleepScores", {}).get("overallScore")
-                            # overallScore is sometimes a plain int, sometimes {"value": N, ...}
-                            if isinstance(raw_score, dict):
-                                score = raw_score.get("value") or 0
-                            else:
-                                score = raw_score or 0
-                            sleep_data = {
-                                "score": score,
-                                "hours": round(fetched_sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600, 1)
-                            }
-                            cache.set(sleep_key, sleep_data, expire=86400)
-                    except Exception:
-                        logger.warning(f"Could not fetch Sleep for {day_str}")
+                sleep_data = {"score": 0, "hours": 0}
+                try:
+                    fetched_sleep = fetcher.get_sleep_data(sleep_date)
+                    if fetched_sleep:
+                        raw_score = fetched_sleep.get("sleepScores", {}).get("overallScore")
+                        # overallScore is sometimes a plain int, sometimes {"value": N, ...}
+                        if isinstance(raw_score, dict):
+                            score = raw_score.get("value") or 0
+                        else:
+                            score = raw_score or 0
+                        sleep_data = {
+                            "score": score,
+                            "hours": round(fetched_sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600, 1),
+                        }
+                except Exception:
+                    logger.warning(f"Could not fetch Sleep for {day_str}")
 
-                # Caching HR Zones for each activity
                 for act in day_activities:
                     act_id = act.get("activityId")
                     if not act_id:
                         continue
 
-                    zones_key = f"zones_{act_id}"
-                    act_zones = cache.get(zones_key)
-                    if act_zones is None:
-                        try:
-                            act_zones = fetcher.get_activity_hr_zones(act_id)
-                            # Garmin returns list of dicts with zoneNumber, secsInZone
-                            cache.set(zones_key, act_zones, expire=604800) # Cache for 1 week
-                        except Exception:
-                            logger.warning(f"Could not fetch zones for activity {act_id}")
-                            act_zones = []
+                    try:
+                        act_zones = fetcher.get_activity_hr_zones(act_id)
+                    except Exception:
+                        logger.warning(f"Could not fetch zones for activity {act_id}")
+                        act_zones = []
 
                     if act_zones:
                         for z in act_zones:

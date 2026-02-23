@@ -49,7 +49,8 @@ export const useWeeklyActivities = () => {
       count: day.count,
       rhr: day.rhr,
       sleep_hours: day.sleep_hours,
-      sleep_score: day.sleep_score
+      sleep_score: day.sleep_score,
+      aerobic_te: day.aerobic_te ?? 0,
     }))
   })
 

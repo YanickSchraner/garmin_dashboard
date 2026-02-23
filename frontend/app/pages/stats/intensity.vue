@@ -36,12 +36,12 @@
             <div v-for="(mins, i) in currentIntensity.slice(1)" :key="i" class="intensity-row">
               <div class="zone-label">ZONE {{ i + 1 }}</div>
               <div class="bar-track">
-                <div 
-                  class="bar-fill" 
-                  :class="'zone--' + (i + 1)" 
+                <div
+                  class="bar-fill"
+                  :class="'zone--' + (i + 1)"
                   :style="{ width: (maxZoneMinutes > 0 ? (mins / maxZoneMinutes * 100) : 0) + '%' }"
                 >
-                  <span v-if="mins > 0" class="bar-val">{{ Math.round(mins) }}m</span>
+                  <span v-if="mins > 0" class="bar-val" :class="{ 'bar-val--inside': isBarLong(mins) }">{{ Math.round(mins) }}m</span>
                 </div>
               </div>
             </div>
@@ -98,6 +98,8 @@ const prevTotalMinutes = computed(() => {
 const maxZoneMinutes = computed(() => {
   return Math.max(...currentIntensity.value.slice(1), 1)
 })
+
+const isBarLong = (mins) => maxZoneMinutes.value > 0 && (mins / maxZoneMinutes.value) > 0.75
 </script>
 
 <style scoped>
@@ -192,7 +194,7 @@ const maxZoneMinutes = computed(() => {
   height: 24px;
   background: var(--raised);
   border-radius: 2px;
-  overflow: visible;
+  overflow: hidden;
   position: relative;
 }
 
@@ -211,6 +213,12 @@ const maxZoneMinutes = computed(() => {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text);
+  white-space: nowrap;
+}
+
+.bar-val--inside {
+  right: 8px;
+  color: #fff;
 }
 
 .zone--1 { background: #94a3b8; }

@@ -77,6 +77,15 @@ def get_fetcher(settings: Settings = Depends(get_settings)):
         raise HTTPException(status_code=500, detail=f"Internal Server Error during Garmin Login: {e}")
 
 
+@app.get("/debug/sleep/{date}")
+async def debug_sleep(
+    date: str,
+    fetcher: GarminFetcher = Depends(get_fetcher),
+):
+    """Return raw sleep data from Garmin for debugging — remove after use."""
+    return fetcher.get_sleep_data(date)
+
+
 @app.get("/me")
 async def get_profile(
     settings: Settings = Depends(get_settings),
@@ -254,15 +263,24 @@ async def get_weekly_stats(
                         rhr = 0
 
                 # Caching Sleep
-                sleep_key = f"sleep_{day_str}"
+                # Garmin records sleep on the wake-up date, so Monday night (Mon→Tue)
+                # is stored under Tuesday's date. Fetch day+1 to get that night's data.
+                sleep_date = (day_date + timedelta(days=1)).strftime("%Y-%m-%d")
+                sleep_key = f"sleep_{sleep_date}"
                 sleep_data = cache.get(sleep_key)
                 if sleep_data is None:
                     sleep_data = {"score": 0, "hours": 0}
                     try:
-                        fetched_sleep = fetcher.get_sleep_data(day_str)
+                        fetched_sleep = fetcher.get_sleep_data(sleep_date)
                         if fetched_sleep:
+                            raw_score = fetched_sleep.get("sleepScores", {}).get("overallScore")
+                            # overallScore is sometimes a plain int, sometimes {"value": N, ...}
+                            if isinstance(raw_score, dict):
+                                score = raw_score.get("value") or 0
+                            else:
+                                score = raw_score or 0
                             sleep_data = {
-                                "score": fetched_sleep.get("sleepScores", {}).get("overallScore") or 0,
+                                "score": score,
                                 "hours": round(fetched_sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600, 1)
                             }
                             cache.set(sleep_key, sleep_data, expire=86400)

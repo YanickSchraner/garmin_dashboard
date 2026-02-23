@@ -265,7 +265,7 @@ async def get_weekly_stats(
                 # Garmin records sleep on the wake-up date, so Monday night (Mon→Tue)
                 # is stored under Tuesday's date. Fetch day+1 to get that night's data.
                 sleep_date = (day_date + timedelta(days=1)).strftime("%Y-%m-%d")
-                sleep_data = {"score": 0, "hours": 0}
+                sleep_data = {"score": 0, "hours": 0, "hrv_status": ""}
                 try:
                     fetched_sleep = fetcher.get_sleep_data(sleep_date)
                     if fetched_sleep:
@@ -275,9 +275,13 @@ async def get_weekly_stats(
                             score = raw_score.get("value") or 0
                         else:
                             score = raw_score or 0
+                        # Newer Garmin firmware omits sleepScores; fall back to bodyBatteryChange
+                        if not score:
+                            score = fetched_sleep.get("bodyBatteryChange") or 0
                         sleep_data = {
                             "score": score,
                             "hours": round(fetched_sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600, 1),
+                            "hrv_status": fetched_sleep.get("hrvStatus", ""),
                         }
                 except Exception:
                     logger.warning(f"Could not fetch Sleep for {day_str}")
@@ -311,6 +315,7 @@ async def get_weekly_stats(
                     "rhr": rhr,
                     "sleep_hours": sleep_data.get("hours") if sleep_data else 0,
                     "sleep_score": sleep_data.get("score") if sleep_data else 0,
+                    "sleep_hrv_status": sleep_data.get("hrv_status") if sleep_data else "",
                     "training_intensity": intensity,
                     "aerobic_te": aerobic_te,
                 })

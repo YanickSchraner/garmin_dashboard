@@ -117,7 +117,7 @@ const chartData = computed(() => {
     hours: day.sleep_hours || 0,
     prevHours: prevActivitiesByDay.value[i]?.sleep_hours || 0,
     score: day.sleep_score || 0,
-    recovery: getRecoveryLabel(day.sleep_score)
+    recovery: day.sleep_hrv_status ? getHrvLabel(day.sleep_hrv_status) : getRecoveryLabel(day.sleep_score)
   }))
 })
 
@@ -154,6 +154,11 @@ const getRecoveryLabel = (s) => {
   if (s >= 80) return 'Good'
   if (s >= 70) return 'Fair'
   return 'Needs Rest'
+}
+
+const getHrvLabel = (status) => {
+  const map = { BALANCED: 'Balanced', GOOD: 'Good', EXCELLENT: 'Excellent', POOR: 'Poor', UNBALANCED: 'Unbalanced' }
+  return map[status] || status
 }
 
 const getScoreColor = (s) => {

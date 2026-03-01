@@ -14,6 +14,7 @@ def mock_env():
 @pytest.fixture
 def client():
     from garmin_dashboard.main import app, get_settings
+
     get_settings.cache_clear()
     return TestClient(app)
 

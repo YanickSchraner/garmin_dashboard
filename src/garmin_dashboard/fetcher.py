@@ -121,26 +121,26 @@ class GarminFetcher:
 
         normalized = {
             # Identity
-            "activityId":   raw.get("activityId"),
+            "activityId": raw.get("activityId"),
             "activityName": raw.get("activityName"),
             "activityType": raw.get("activityTypeDTO", {}).get("typeKey"),
             "startTimeLocal": raw.get("startTimeLocal") or s.get("startTimeLocal"),
             # Core performance (always in summaryDTO)
-            "distance":     s.get("distance"),
-            "duration":     s.get("duration") or s.get("elapsedDuration"),
+            "distance": s.get("distance"),
+            "duration": s.get("duration") or s.get("elapsedDuration"),
             "averageSpeed": s.get("averageSpeed"),
-            "averageHR":    s.get("averageHR"),
-            "maxHR":        s.get("maxHR"),
-            "calories":     s.get("calories"),
+            "averageHR": s.get("averageHR"),
+            "maxHR": s.get("maxHR"),
+            "calories": s.get("calories"),
             "elevationGain": s.get("elevationGain"),
             "averageRunCadence": s.get("averageRunCadence") or s.get("averageRunningCadenceInStepsPerMinute"),
             "strideLength": stride_m,
             # Training metrics — try top-level first, fall back to summaryDTO
-            "aerobicTrainingEffect":   pick("aerobicTrainingEffect", "trainingEffect"),
+            "aerobicTrainingEffect": pick("aerobicTrainingEffect", "trainingEffect"),
             "anaerobicTrainingEffect": pick("anaerobicTrainingEffect"),
-            "trainingStressScore":     pick("trainingStressScore"),
-            "recoveryTime":            pick("recoveryTime"),  # hours
-            "vO2MaxValue":             pick("vO2MaxValue", "vo2MaxValue"),
+            "trainingStressScore": pick("trainingStressScore"),
+            "recoveryTime": pick("recoveryTime"),  # hours
+            "vO2MaxValue": pick("vO2MaxValue", "vo2MaxValue"),
         }
 
         missing = [k for k, v in normalized.items() if v is None and k not in ("strideLength",)]
@@ -176,6 +176,21 @@ class GarminFetcher:
     def _fetch_activity_splits_data(self, activity_id: int) -> dict:
         logger.info(f"Fetching splits for activity {activity_id}")
         return self.client.get_activity_splits(activity_id)
+
+    def create_bouldering_session(self, timezone: str, duration_minutes: int = 120) -> dict:
+        """Create a manual bouldering activity starting now."""
+        from datetime import datetime
+
+        start_datetime = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.00")
+        logger.info(f"Creating bouldering session: {duration_minutes}min at {start_datetime} ({timezone})")
+        return self.client.create_manual_activity(
+            start_datetime=start_datetime,
+            timezone=timezone,
+            type_key="bouldering",
+            distance_km=0,
+            duration_min=duration_minutes,
+            activity_name="Bouldering",
+        )
 
 
 def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garminconnect") -> Garmin:

@@ -1,4 +1,3 @@
-
 import pytest
 
 
@@ -6,6 +5,7 @@ import pytest
 def reset_cache():
     """Clear all caches before every test."""
     from garmin_dashboard.cache import clear_all
+
     clear_all()
     yield
     clear_all()

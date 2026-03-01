@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     annual_run_goal: int = 104
     weekly_run_goal: int = 2
 
+    # IANA timezone for manual activity creation (e.g. "Europe/Brussels", "America/New_York")
+    timezone: str = "UTC"
+
 
 @lru_cache
 def get_settings() -> Settings:
@@ -128,6 +131,23 @@ async def get_config(settings: Settings = Depends(get_settings)):
         "annual_run_goal": settings.annual_run_goal,
         "weekly_run_goal": settings.weekly_run_goal,
     }
+
+
+@app.post("/activities/bouldering")
+async def log_bouldering(
+    settings: Settings = Depends(get_settings),
+    fetcher: GarminFetcher = Depends(get_fetcher),
+):
+    """Log a 2-hour bouldering session starting now."""
+    try:
+        result = fetcher.create_bouldering_session(
+            timezone=settings.timezone,
+            duration_minutes=120,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error creating bouldering activity: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/activities/recent")
@@ -269,19 +289,19 @@ async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):
         return f"{int(h)}h {round((h - int(h)) * 60)}m"
 
     # Baseline: first full week of January; current: last 7 days
-    jan_dates  = date_range(datetime(year, 1, 6), 7)
+    jan_dates = date_range(datetime(year, 1, 6), 7)
     curr_dates = date_range(now - timedelta(days=7), 7)
     # Sleep comparison: last 14 days vs same window last year
     sleep_curr_dates = date_range(now - timedelta(days=14), 14)
     sleep_prev_dates = date_range(now - timedelta(days=365 + 14), 14)
 
     try:
-        jan_rhr    = avg_health_field(jan_dates,  "restingHeartRate")
-        curr_rhr   = avg_health_field(curr_dates, "restingHeartRate")
-        jan_stress  = avg_health_field(jan_dates,  "averageStressLevel")
+        jan_rhr = avg_health_field(jan_dates, "restingHeartRate")
+        curr_rhr = avg_health_field(curr_dates, "restingHeartRate")
+        jan_stress = avg_health_field(jan_dates, "averageStressLevel")
         curr_stress = avg_health_field(curr_dates, "averageStressLevel")
-        curr_sleep  = avg_sleep_hours(sleep_curr_dates)
-        prev_sleep  = avg_sleep_hours(sleep_prev_dates)
+        curr_sleep = avg_sleep_hours(sleep_curr_dates)
+        prev_sleep = avg_sleep_hours(sleep_prev_dates)
 
         return {
             "rhr": {
@@ -355,7 +375,9 @@ async def get_weekly_stats(
                         score = (sleep_scores.get("overall") or {}).get("value") or 0
                         sleep_data = {
                             "score": score,
-                            "hours": round(((fetched_sleep.get("dailySleepDTO") or {}).get("sleepTimeSeconds") or 0) / 3600, 1),
+                            "hours": round(
+                                ((fetched_sleep.get("dailySleepDTO") or {}).get("sleepTimeSeconds") or 0) / 3600, 1
+                            ),
                             "hrv_status": (sleep_scores.get("overall") or {}).get("qualifierKey", ""),
                         }
                 except Exception:
@@ -380,7 +402,9 @@ async def get_weekly_stats(
 
                 aerobic_te = max([a.get("aerobicTrainingEffect", 0) for a in day_activities] + [0])
                 anaerobic_te = max([a.get("anaerobicTrainingEffect", 0) for a in day_activities] + [0])
-                intensity = "high" if aerobic_te >= 4 else "medium" if aerobic_te >= 3 else "low" if aerobic_te > 0 else None
+                intensity = (
+                    "high" if aerobic_te >= 4 else "medium" if aerobic_te >= 3 else "low" if aerobic_te > 0 else None
+                )
 
                 weeks[week_name]["days"].append({
                     "date": day_str,
@@ -402,6 +426,7 @@ async def get_weekly_stats(
     except Exception as e:
         logger.error(f"Error in get_weekly_stats: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -6,6 +6,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def reset_cache():
     from garmin_dashboard.cache import clear_all
+
     clear_all()
     yield
     clear_all()
@@ -19,6 +20,7 @@ def mock_client():
 @pytest.fixture
 def fetcher(mock_client):
     from garmin_dashboard.fetcher import GarminFetcher
+
     return GarminFetcher(mock_client, user_email="test@example.com")
 
 

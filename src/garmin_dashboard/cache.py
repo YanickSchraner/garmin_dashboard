@@ -4,8 +4,8 @@ from typing import Any
 
 from cachetools import TTLCache
 
-TTL_LONG = 86400   # 24 hours — stable historical data
-TTL_SHORT = 3600   # 1 hour  — activity lists
+TTL_LONG = 86400  # 24 hours — stable historical data
+TTL_SHORT = 3600  # 1 hour  — activity lists
 
 _cache_long: TTLCache = TTLCache(maxsize=4500, ttl=TTL_LONG)
 _cache_short: TTLCache = TTLCache(maxsize=500, ttl=TTL_SHORT)

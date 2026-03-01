@@ -193,7 +193,7 @@ class GarminFetcher:
         )
 
 
-def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garminconnect") -> Garmin:
+def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garminconnect") -> Garmin:  # noqa: S107
     """Initialize Garmin API following the example flow.
 
     1. Tries login with stored tokens (no credentials needed).
@@ -207,9 +207,10 @@ def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garm
         garmin = Garmin()
         garmin.login(token_store_path)
         logger.info("Successfully logged in using stored tokens")
-        return garmin
     except Exception as e:
         logger.info(f"Stored token login failed or not available: {e}. Falling back to credentials.")
+    else:
+        return garmin
 
     if not email or not password:
         logger.error("Credentials missing and token login failed")
@@ -222,10 +223,11 @@ def init_garmin(email: str = "", password: str = "", token_store: str = "~/.garm
         garmin.login()
         garmin.garth.dump(str(token_store_path))
         logger.info("Successfully logged in with credentials and saved tokens")
-        return garmin
     except GarthException:
         logger.exception("Garth authentication error")
         raise
     except Exception:
         logger.exception("Unexpected error during Garmin login")
         raise
+    else:
+        return garmin

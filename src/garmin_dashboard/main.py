@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     email: str = ""
     password: str = ""
-    garmin_token_store: str = "~/.garminconnect"
+    garmin_token_store: str = "~/.garminconnect"  # noqa: S105
 
     # Personalisation — used as fallback when Garmin API returns no name
     display_name: str = ""
@@ -75,8 +75,8 @@ def get_fetcher(settings: Settings = Depends(get_settings)):
             or "sso error" in str(e).lower()
             or "authentication required" in str(e).lower()
         ):
-            raise HTTPException(status_code=401, detail=f"Garmin Authentication Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal Server Error during Garmin Login: {e}")
+            raise HTTPException(status_code=401, detail=f"Garmin Authentication Error: {e}") from e
+        raise HTTPException(status_code=500, detail=f"Internal Server Error during Garmin Login: {e}") from e
 
 
 @app.get("/debug/sleep/{date}")
@@ -144,10 +144,11 @@ async def log_bouldering(
             timezone=settings.timezone,
             duration_minutes=120,
         )
-        return {"created": True}
     except Exception as e:
         logger.error(f"Error creating bouldering activity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
+        return {"created": True}
 
 
 @app.get("/activities/recent")
@@ -157,10 +158,12 @@ async def get_recent_activities(
 ):
     """Get most recent activities, newest first."""
     try:
-        return fetcher.get_recent_activities(limit)
+        result = fetcher.get_recent_activities(limit)
     except Exception as e:
         logger.error(f"Error fetching recent activities: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
+        return result
 
 
 @app.get("/activities/{activity_id}")
@@ -177,7 +180,7 @@ async def get_activity_detail(
         summary = fetcher.get_activity_summary(activity_id)
     except Exception as e:
         logger.error(f"Error fetching activity {activity_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     hr_zones = None
     try:
@@ -202,22 +205,27 @@ async def get_activities(
 ):
     """Get activity summaries for a date range."""
     try:
-        return fetcher.get_activities(start_date, end_date)
+        result = fetcher.get_activities(start_date, end_date)
     except Exception as e:
         logger.error(f"Error fetching activities: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
+        return result
 
 
 @app.get("/health-stats")
 async def get_health_stats(
-    date: str = Query(..., description="ISO 8601 date YYYY-MM-DD"), fetcher: GarminFetcher = Depends(get_fetcher)
+    date: str = Query(..., description="ISO 8601 date YYYY-MM-DD"),
+    fetcher: GarminFetcher = Depends(get_fetcher),
 ):
     """Get health stats for a specific date."""
     try:
-        return fetcher.get_health_stats(date)
+        result = fetcher.get_health_stats(date)
     except Exception as e:
         logger.error(f"Error fetching health stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
+        return result
 
 
 @app.get("/goal-status")
@@ -242,7 +250,7 @@ async def get_goal_status(
 
         expected_runs_to_date = (goal_runs / total_days) * days_passed
 
-        return {
+        result = {
             "year": year,
             "goal": goal_runs,
             "actual": actual_runs,
@@ -252,11 +260,13 @@ async def get_goal_status(
         }
     except Exception as e:
         logger.error(f"Error calculating goal status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
+        return result
 
 
 @app.get("/health-snapshot")
-async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):
+async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):  # noqa: C901
     """Return YTD health trends: RHR, sleep, and stress vs January baseline."""
     now = datetime.now()
     year = now.year
@@ -303,7 +313,7 @@ async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):
         curr_sleep = avg_sleep_hours(sleep_curr_dates)
         prev_sleep = avg_sleep_hours(sleep_prev_dates)
 
-        return {
+        result = {
             "rhr": {
                 "current": round(curr_rhr) if curr_rhr else None,
                 "baseline": round(jan_rhr) if jan_rhr else None,
@@ -322,10 +332,12 @@ async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):
     except Exception as e:
         logger.error(f"Error in get_health_snapshot: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
+        return result
 
 
 @app.get("/stats/weekly")
-async def get_weekly_stats(
+async def get_weekly_stats(  # noqa: C901
     date: str = Query(None, description="Reference date (YYYY-MM-DD). Defaults to today."),
     fetcher: GarminFetcher = Depends(get_fetcher),
 ):
@@ -421,14 +433,14 @@ async def get_weekly_stats(
                     "anaerobic_te": anaerobic_te,
                 })
 
-        return weeks
-
     except Exception as e:
         logger.error(f"Error in get_weekly_stats: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+    else:
+        return weeks
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # noqa: S104

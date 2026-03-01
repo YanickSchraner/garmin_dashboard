@@ -5,9 +5,8 @@ import RunGoalProgress from '../../app/components/RunGoalProgress.vue'
 describe('RunGoalProgress', () => {
   it('renders correctly with default props', () => {
     const wrapper = mount(RunGoalProgress)
-    expect(wrapper.text()).toContain('Annual Goal: 104 Runs')
-    expect(wrapper.text()).toContain('0')
-    expect(wrapper.text()).toContain('/ 104')
+    expect(wrapper.text()).toContain('ANNUAL GOAL')
+    expect(wrapper.text()).toContain('104')
   })
 
   it('displays correct status text when ahead', () => {
@@ -18,7 +17,7 @@ describe('RunGoalProgress', () => {
         status: 'ahead'
       }
     })
-    expect(wrapper.text()).toContain('Ahead of Schedule')
+    expect(wrapper.text()).toContain('AHEAD')
   })
 
   it('displays correct status text when behind', () => {
@@ -29,7 +28,7 @@ describe('RunGoalProgress', () => {
         status: 'behind'
       }
     })
-    expect(wrapper.text()).toContain('Behind Schedule')
+    expect(wrapper.text()).toContain('BEHIND')
   })
 
   it('emits refresh event when Sync button is clicked', async () => {

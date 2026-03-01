@@ -140,11 +140,11 @@ async def log_bouldering(
 ):
     """Log a 2-hour bouldering session starting now."""
     try:
-        result = fetcher.create_bouldering_session(
+        fetcher.create_bouldering_session(
             timezone=settings.timezone,
             duration_minutes=120,
         )
-        return result
+        return {"created": True}
     except Exception as e:
         logger.error(f"Error creating bouldering activity: {e}")
         raise HTTPException(status_code=500, detail=str(e))

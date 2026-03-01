@@ -35,9 +35,20 @@
               <span class="panel-eyebrow">RECENT</span>
               <h2 class="panel-title">Activities</h2>
             </div>
-            <AppButton @click="navigateTo('/activities')" icon-right="→">
-              VIEW ALL
-            </AppButton>
+            <div class="header-actions">
+              <button
+                class="log-btn"
+                :class="`log-btn--${logState}`"
+                :disabled="logState === 'loading'"
+                @click="logBouldering"
+              >
+                <span class="log-btn-icon">⬡</span>
+                {{ logLabel }}
+              </button>
+              <AppButton @click="navigateTo('/activities')" icon-right="→">
+                VIEW ALL
+              </AppButton>
+            </div>
           </template>
 
           <div class="table-wrap">
@@ -214,6 +225,28 @@ const stressBarPct = computed(() => {
 const refreshData = async () => {
   await Promise.all([refreshGoal(), refreshActivities()])
 }
+
+// Bouldering quick-log
+const logState = ref('idle') // 'idle' | 'loading' | 'success' | 'error'
+const logLabel = computed(() => ({
+  idle: 'LOG BOULDERING',
+  loading: 'LOGGING...',
+  success: 'LOGGED ✓',
+  error: 'FAILED',
+}[logState.value]))
+
+const logBouldering = async () => {
+  logState.value = 'loading'
+  try {
+    await $fetch(`${apiBase}/activities/bouldering`, { method: 'POST' })
+    logState.value = 'success'
+    refreshActivities()
+  } catch {
+    logState.value = 'error'
+  } finally {
+    setTimeout(() => { logState.value = 'idle' }, 3000)
+  }
+}
 </script>
 
 <style scoped>
@@ -270,6 +303,57 @@ const refreshData = async () => {
   font-size: 26px;
   color: var(--text);
   letter-spacing: 0.05em;
+}
+
+/* Activities header actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.log-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  padding: 6px 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: var(--muted-light);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.log-btn:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.log-btn--loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.log-btn--success {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.log-btn--error {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.log-btn-icon {
+  font-size: 12px;
 }
 
 /* Table */

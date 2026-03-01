@@ -1,9 +1,10 @@
 services:
-  backend:
+  garmin-dashboard-backend:
     build:
       context: ..
       dockerfile: Dockerfile
     image: garmin-dashboard-backend
+    container_name: garmin-dashboard-backend
     volumes:
       - garmin-tokens:/home/appuser/.garminconnect
     healthcheck:
@@ -12,14 +13,17 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+    networks:
+      - web_proxy
 
-  frontend:
+  garmin-dashboard-frontend:
     build:
       context: ../frontend
       dockerfile: Dockerfile
     image: garmin-dashboard-frontend
+    container_name: garmin-dashboard-frontend
     depends_on:
-      backend:
+      garmin-dashboard-backend:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/"]
@@ -27,6 +31,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    networks:
+      - web_proxy
 
 volumes:
   garmin-tokens:
+
+networks:
+  web_proxy:
+    external: true

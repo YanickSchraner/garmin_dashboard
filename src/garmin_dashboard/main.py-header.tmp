@@ -1,0 +1,25 @@
+from datetime import datetime, timedelta
+from functools import lru_cache
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from garmin_dashboard.cache import invalidate_user
+from garmin_dashboard.fetcher import GarminFetcher, init_garmin
+
+app = FastAPI(title="Garmin Custom Dashboard API")
+
+# API Router with prefix for standard routing
+router = APIRouter(prefix="/api")
+
+# Generic health endpoint for Docker healthcheck (not prefixed)
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+# Configure loguru to write to a file
+import os
+LOG_FILE = os.getenv("LOG_FILE", "garmin.log")
+logger.add(LOG_FILE, rotation="10 MB", level="INFO")

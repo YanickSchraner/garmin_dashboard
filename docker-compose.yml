@@ -1,27 +1,28 @@
 services:
-  backend:
+  garmin-dashboard-backend:
     extends:
       file: docker/services.compose.yml
-      service: backend
+      service: garmin-dashboard-backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     env_file:
       - .env
 
-  frontend:
+  garmin-dashboard-frontend:
     extends:
       file: docker/services.compose.yml
-      service: frontend
+      service: garmin-dashboard-frontend
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
-      # SSR inside Docker reaches backend via Docker network service name
-      NUXT_API_BASE_INTERNAL: http://backend:8000
-      # Browser URL — read from .env (NUXT_PUBLIC_API_BASE=http://<pi-ip>:8000)
-      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8000}
+      # SSR inside Docker reaches backend via unique container name on web_proxy network
+      # Now requires /api prefix as the backend routes are unified
+      NUXT_API_BASE_INTERNAL: http://garmin-dashboard-backend:8000/api
+      # Browser URL — must now point to the relative /api prefix handled by Caddy
+      NUXT_PUBLIC_API_BASE: /api
 
 volumes:
   garmin-tokens:
     external: false
+
+networks:
+  web_proxy:
+    external: true

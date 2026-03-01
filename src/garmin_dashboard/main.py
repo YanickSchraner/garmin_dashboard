@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,6 +10,14 @@ from garmin_dashboard.cache import invalidate_user
 from garmin_dashboard.fetcher import GarminFetcher, init_garmin
 
 app = FastAPI(title="Garmin Custom Dashboard API")
+
+# Generic health endpoint for Docker healthcheck (not prefixed)
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+# API Router (prefix will be added during app inclusion)
+router = APIRouter()
 
 # Configure loguru to write to a file
 import os
@@ -24,7 +32,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 class Settings(BaseSettings):
     """Typed, validated application config — reads from env and .env file."""
@@ -80,7 +87,7 @@ def get_fetcher(settings: Settings = Depends(get_settings)):
         raise HTTPException(status_code=500, detail=f"Internal Server Error during Garmin Login: {e}") from e
 
 
-@app.get("/debug/sleep/{date}")
+@router.get("/debug/sleep/{date}")
 async def debug_sleep(
     date: str,
     fetcher: GarminFetcher = Depends(get_fetcher),
@@ -89,7 +96,7 @@ async def debug_sleep(
     return fetcher.get_sleep_data(date)
 
 
-@app.get("/me")
+@router.get("/me")
 async def get_profile(
     settings: Settings = Depends(get_settings),
     fetcher: GarminFetcher = Depends(get_fetcher),
@@ -115,7 +122,7 @@ async def get_profile(
     return {"display_name": name}
 
 
-@app.post("/sync")
+@router.post("/sync")
 async def sync_garmin(
     settings: Settings = Depends(get_settings),
 ):
@@ -125,7 +132,7 @@ async def sync_garmin(
     return {"cleared": True}
 
 
-@app.get("/config")
+@router.get("/config")
 async def get_config(settings: Settings = Depends(get_settings)):
     """Return dashboard configuration (goals, targets)."""
     return {
@@ -134,7 +141,7 @@ async def get_config(settings: Settings = Depends(get_settings)):
     }
 
 
-@app.post("/activities/bouldering")
+@router.post("/activities/bouldering")
 async def log_bouldering(
     settings: Settings = Depends(get_settings),
     fetcher: GarminFetcher = Depends(get_fetcher),
@@ -152,7 +159,7 @@ async def log_bouldering(
         return {"created": True}
 
 
-@app.get("/activities/recent")
+@router.get("/activities/recent")
 async def get_recent_activities(
     limit: int = Query(25, ge=1, le=100, description="Number of most recent activities to return"),
     fetcher: GarminFetcher = Depends(get_fetcher),
@@ -167,7 +174,7 @@ async def get_recent_activities(
         return result
 
 
-@app.get("/activities/{activity_id}")
+@router.get("/activities/{activity_id}")
 async def get_activity_detail(
     activity_id: int,
     fetcher: GarminFetcher = Depends(get_fetcher),
@@ -198,7 +205,7 @@ async def get_activity_detail(
     return {"summary": summary, "hr_zones": hr_zones, "splits": splits}
 
 
-@app.get("/activities")
+@router.get("/activities")
 async def get_activities(
     start_date: str = Query(..., description="ISO 8601 date YYYY-MM-DD"),
     end_date: str = Query(..., description="ISO 8601 date YYYY-MM-DD"),
@@ -214,7 +221,7 @@ async def get_activities(
         return result
 
 
-@app.get("/health-stats")
+@router.get("/health-stats")
 async def get_health_stats(
     date: str = Query(..., description="ISO 8601 date YYYY-MM-DD"),
     fetcher: GarminFetcher = Depends(get_fetcher),
@@ -229,7 +236,7 @@ async def get_health_stats(
         return result
 
 
-@app.get("/goal-status")
+@router.get("/goal-status")
 async def get_goal_status(
     year: int = Query(datetime.now().year, description="The year to check"),
     settings: Settings = Depends(get_settings),
@@ -266,7 +273,7 @@ async def get_goal_status(
         return result
 
 
-@app.get("/health-snapshot")
+@router.get("/health-snapshot")
 async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):  # noqa: C901
     """Return YTD health trends: RHR, sleep, and stress vs January baseline."""
     now = datetime.now()
@@ -337,7 +344,7 @@ async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):  #
         return result
 
 
-@app.get("/stats/weekly")
+@router.get("/stats/weekly")
 async def get_weekly_stats(  # noqa: C901
     date: str = Query(None, description="Reference date (YYYY-MM-DD). Defaults to today."),
     fetcher: GarminFetcher = Depends(get_fetcher),
@@ -440,6 +447,8 @@ async def get_weekly_stats(  # noqa: C901
     else:
         return weeks
 
+# Register all routes from the router under the /api prefix
+app.include_router(router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn

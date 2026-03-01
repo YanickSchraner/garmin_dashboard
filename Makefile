@@ -19,7 +19,7 @@ dev-backend:
 
 dev-frontend:
 	@echo "Starting Nuxt 4 frontend..."
-	cd frontend && bun run dev | tee -a ../frontend.log
+	cd frontend && NUXT_PUBLIC_API_BASE=http://localhost:8000/api NUXT_API_BASE_INTERNAL=http://localhost:8000/api bun run dev | tee -a ../frontend.log
 
 # --- Testing ---
 test: test-backend test-frontend

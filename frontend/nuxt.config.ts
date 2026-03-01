@@ -4,11 +4,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxt/ui'],
   runtimeConfig: {
-    // Server-only: used for SSR requests inside Docker (direct container-to-container)
-    apiBaseInternal: 'http://localhost:8000',
+    // These will be overridden by NUXT_API_BASE_INTERNAL and NUXT_PUBLIC_API_BASE
+    apiBaseInternal: '',
     public: {
-      // Exposed to browser: must be reachable from the user's machine
-      apiBase: 'http://localhost:8000',
+      apiBase: '',
     },
   },
   components: [

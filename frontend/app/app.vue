@@ -32,7 +32,8 @@
 </template>
 
 <script setup>
-const { data: profile } = await useFetch('http://localhost:8000/me', {
+const apiBase = useApiBase()
+const { data: profile } = await useFetch(`${apiBase}/me`, {
   default: () => ({ display_name: null })
 })
 
@@ -41,6 +42,25 @@ const displayName = computed(() => profile.value?.display_name || null)
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+/* ── Raspberry Pi 7" display: global page-layout tweaks ─────────────── */
+@media (max-width: 800px) {
+  /* Stat page titles (scoped in each page, override with higher specificity) */
+  .stats-page .page-title,
+  .page .page-title {
+    font-size: 24px !important;
+  }
+
+  /* Activity detail title already uses clamp(), no override needed */
+
+  /* Stats strip on activity detail: wrap into 3-column grid */
+  .stats-strip {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+  .stats-strip .stat-divider {
+    display: none;
+  }
+}
 
 /* Light mode (default) */
 :root {
@@ -240,5 +260,38 @@ tbody td {
   font-size: 10px;
   letter-spacing: 0.18em;
   color: var(--muted);
+}
+
+/* ── Raspberry Pi 7" display (800×480) ─────────────────────────────── */
+@media (max-width: 800px) {
+  .header-inner {
+    height: 44px;
+    padding: 0 16px;
+  }
+
+  .logo-mark {
+    width: 18px;
+    height: 18px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  .user-greeting {
+    display: none;
+  }
+
+  .user-name {
+    font-size: 13px;
+  }
+
+  .site-main {
+    padding: 16px;
+  }
+
+  .site-footer {
+    display: none;
+  }
 }
 </style>

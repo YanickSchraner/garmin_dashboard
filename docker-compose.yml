@@ -1,0 +1,27 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Garmin auth tokens are persisted across container restarts
+      - garmin-tokens:/root/.garminconnect
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # SSR inside Docker reaches backend via Docker network service name
+      NUXT_API_BASE_INTERNAL: http://backend:8000
+      # Browser URL — read from .env (NUXT_PUBLIC_API_BASE=http://<pi-ip>:8000)
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8000}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  garmin-tokens:

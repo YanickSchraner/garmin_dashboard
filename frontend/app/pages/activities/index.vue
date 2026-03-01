@@ -87,9 +87,10 @@
 const limit = ref(25)
 
 const { formatDate, formatDistance, formatDuration, formatPace } = useFormatters()
+const apiBase = useApiBase()
 
 const { data: activities, pending, refresh } = await useFetch(
-  () => `http://localhost:8000/activities/recent?limit=${limit.value}`,
+  () => `${apiBase}/activities/recent?limit=${limit.value}`,
   { watch: false }
 )
 

@@ -153,8 +153,9 @@ const route  = useRoute()
 const id     = route.params.id
 
 const { formatDate, formatDistance, formatDuration, formatPace } = useFormatters()
+const apiBase = useApiBase()
 
-const { data, pending, error } = await useFetch(`http://localhost:8000/activities/${id}`)
+const { data, pending, error } = await useFetch(`${apiBase}/activities/${id}`)
 
 const act      = computed(() => data.value?.summary)
 const hrZones  = computed(() => data.value?.hr_zones)

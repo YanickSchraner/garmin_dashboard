@@ -139,7 +139,7 @@
 </template>
 
 <script setup>
-const apiBase = 'http://localhost:8000'
+const apiBase = useApiBase()
 
 const { formatDate } = useFormatters()
 

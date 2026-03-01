@@ -1,4 +1,5 @@
 export const useWeeklyActivities = () => {
+  const apiBase = useApiBase()
   const activities = ref([])
   const weeklyStats = ref({ current: [], previous: [] })
   const loading = ref(true)
@@ -14,7 +15,7 @@ export const useWeeklyActivities = () => {
     const { referenceDateStr } = getWeekRange()
     
     try {
-      const data = await $fetch(`http://localhost:8000/stats/weekly`, {
+      const data = await $fetch(`${apiBase}/stats/weekly`, {
         query: {
           date: referenceDateStr
         }

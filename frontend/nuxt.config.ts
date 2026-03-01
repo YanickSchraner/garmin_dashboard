@@ -3,6 +3,14 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   modules: ['@nuxt/ui'],
+  runtimeConfig: {
+    // Server-only: used for SSR requests inside Docker (direct container-to-container)
+    apiBaseInternal: 'http://localhost:8000',
+    public: {
+      // Exposed to browser: must be reachable from the user's machine
+      apiBase: 'http://localhost:8000',
+    },
+  },
   components: [
     { path: '~/components/ui', pathPrefix: false },
     { path: '~/components/activity', pathPrefix: false },

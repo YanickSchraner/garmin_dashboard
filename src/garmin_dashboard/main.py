@@ -237,49 +237,71 @@ async def get_goal_status(
 
 @app.get("/health-snapshot")
 async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):
-    """Return YTD health trends: RHR improvement since Jan and avg sleep vs last year."""
+    """Return YTD health trends: RHR, sleep, and stress vs January baseline."""
     now = datetime.now()
     year = now.year
 
-    def avg_rhr(dates: list[str]) -> int | None:
-        vals = [
-            rhr_data.get("restingHeartRate")
-            for d in dates
-            if (rhr_data := fetcher.get_rhr_day(d)) and rhr_data.get("restingHeartRate")
-        ]
-        return round(sum(vals) / len(vals)) if vals else None
+    def date_range(start: datetime, count: int) -> list[str]:
+        return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(count)]
+
+    def avg_health_field(dates: list[str], field: str) -> float | None:
+        vals = []
+        for d in dates:
+            stats = fetcher.get_health_stats(d)
+            if stats:
+                v = stats.get(field)
+                if v is not None and v > 0:
+                    vals.append(v)
+        return (sum(vals) / len(vals)) if vals else None
 
     def avg_sleep_hours(dates: list[str]) -> float | None:
-        vals = [
-            h for d in dates
-            if (sleep := fetcher.get_sleep_data(d))
-            and (h := sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600) > 0
-        ]
-        return sum(vals) / len(vals) if vals else None
+        vals = []
+        for d in dates:
+            sleep = fetcher.get_sleep_data(d)
+            if sleep:
+                dto = sleep.get("dailySleepDTO") or {}
+                h = (dto.get("sleepTimeSeconds") or 0) / 3600
+                if h > 0:
+                    vals.append(h)
+        return (sum(vals) / len(vals)) if vals else None
 
     def fmt_hours(h: float) -> str:
         return f"{int(h)}h {round((h - int(h)) * 60)}m"
 
-    jan_dates  = [(datetime(year, 1, 6) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
-    curr_dates = [(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, 15)]
-    prev_dates = [(now - timedelta(days=365 + i)).strftime("%Y-%m-%d") for i in range(1, 15)]
+    # Baseline: first full week of January; current: last 7 days
+    jan_dates  = date_range(datetime(year, 1, 6), 7)
+    curr_dates = date_range(now - timedelta(days=7), 7)
+    # Sleep comparison: last 14 days vs same window last year
+    sleep_curr_dates = date_range(now - timedelta(days=14), 14)
+    sleep_prev_dates = date_range(now - timedelta(days=365 + 14), 14)
 
-    jan_rhr   = avg_rhr(jan_dates)
-    curr_rhr  = avg_rhr([(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)])
-    curr_sleep = avg_sleep_hours(curr_dates)
-    prev_sleep = avg_sleep_hours(prev_dates)
+    try:
+        jan_rhr    = avg_health_field(jan_dates,  "restingHeartRate")
+        curr_rhr   = avg_health_field(curr_dates, "restingHeartRate")
+        jan_stress  = avg_health_field(jan_dates,  "averageStressLevel")
+        curr_stress = avg_health_field(curr_dates, "averageStressLevel")
+        curr_sleep  = avg_sleep_hours(sleep_curr_dates)
+        prev_sleep  = avg_sleep_hours(sleep_prev_dates)
 
-    return {
-        "rhr": {
-            "current": curr_rhr,
-            "baseline": jan_rhr,
-            "delta": (curr_rhr - jan_rhr) if jan_rhr and curr_rhr else None,
-        },
-        "sleep": {
-            "avg_formatted": fmt_hours(curr_sleep) if curr_sleep else None,
-            "delta_minutes": round((curr_sleep - prev_sleep) * 60) if curr_sleep and prev_sleep else None,
-        },
-    }
+        return {
+            "rhr": {
+                "current": round(curr_rhr) if curr_rhr else None,
+                "baseline": round(jan_rhr) if jan_rhr else None,
+                "delta": round(curr_rhr - jan_rhr) if jan_rhr and curr_rhr else None,
+            },
+            "sleep": {
+                "avg_formatted": fmt_hours(curr_sleep) if curr_sleep else None,
+                "delta_minutes": round((curr_sleep - prev_sleep) * 60) if curr_sleep and prev_sleep else None,
+            },
+            "stress": {
+                "current": round(curr_stress) if curr_stress else None,
+                "baseline": round(jan_stress) if jan_stress else None,
+                "delta": round(curr_stress - jan_stress) if jan_stress and curr_stress else None,
+            },
+        }
+    except Exception as e:
+        logger.error(f"Error in get_health_snapshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/stats/weekly")
@@ -333,7 +355,7 @@ async def get_weekly_stats(
                         score = (sleep_scores.get("overall") or {}).get("value") or 0
                         sleep_data = {
                             "score": score,
-                            "hours": round(fetched_sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600, 1),
+                            "hours": round(((fetched_sleep.get("dailySleepDTO") or {}).get("sleepTimeSeconds") or 0) / 3600, 1),
                             "hrv_status": (sleep_scores.get("overall") or {}).get("qualifierKey", ""),
                         }
                 except Exception:

@@ -89,16 +89,16 @@
             </div>
             <template v-else>
               <div class="health-metric">
-                <div class="hm-label">RHR IMPROVEMENT</div>
+                <div class="hm-label">RESTING HEART RATE</div>
                 <div class="hm-value">
                   <span class="hm-num" :class="rhrDelta <= 0 ? 'hm-pos' : 'hm-neg'">
                     {{ rhrDelta !== null ? (rhrDelta > 0 ? '+' : '') + rhrDelta : '--' }}
                   </span>
                   <span class="hm-unit" :class="rhrDelta <= 0 ? 'hm-pos' : 'hm-neg'">BPM</span>
                 </div>
-                <div class="hm-desc">since January {{ currentYear }}</div>
+                <div class="hm-desc">vs January {{ currentYear }} ({{ snapshot?.rhr?.current ?? '--' }} bpm now)</div>
                 <div class="hm-bar">
-                  <div class="hm-bar-fill" :style="{ width: rhrBarPct + '%' }"></div>
+                  <div class="hm-bar-fill" :class="rhrDelta <= 0 ? '' : 'hm-bar--neg'" :style="{ width: rhrBarPct + '%' }"></div>
                 </div>
               </div>
 
@@ -112,6 +112,22 @@
                 <div class="hm-desc">{{ sleepDeltaDesc }}</div>
                 <div class="hm-bar">
                   <div class="hm-bar-fill hm-bar--blue" :style="{ width: sleepBarPct + '%' }"></div>
+                </div>
+              </div>
+
+              <div class="hm-separator"></div>
+
+              <div class="health-metric">
+                <div class="hm-label">AVG STRESS LEVEL</div>
+                <div class="hm-value">
+                  <span class="hm-num" :class="stressDelta <= 0 ? 'hm-pos' : 'hm-neg'">
+                    {{ snapshot?.stress?.current ?? '--' }}
+                  </span>
+                  <span class="hm-unit" :class="stressDelta <= 0 ? 'hm-pos' : 'hm-neg'">/100</span>
+                </div>
+                <div class="hm-desc">{{ stressDeltaDesc }}</div>
+                <div class="hm-bar">
+                  <div class="hm-bar-fill" :class="stressDelta <= 0 ? '' : 'hm-bar--neg'" :style="{ width: stressBarPct + '%' }"></div>
                 </div>
               </div>
             </template>
@@ -181,6 +197,18 @@ const sleepBarPct = computed(() => {
   const [h, m] = fmt.split('h ').map(parseFloat)
   const hours = h + (m || 0) / 60
   return Math.min(Math.round(hours / 8 * 100), 100)
+})
+
+const stressDelta = computed(() => snapshot.value?.stress?.delta ?? null)
+const stressDeltaDesc = computed(() => {
+  const d = stressDelta.value
+  const base = snapshot.value?.stress?.baseline
+  if (d === null) return `vs January ${currentYear}`
+  return `${d >= 0 ? '+' : ''}${d} vs January ${currentYear} (was ${base})`
+})
+const stressBarPct = computed(() => {
+  const curr = snapshot.value?.stress?.current
+  return curr ? Math.min(Math.round(curr), 100) : 0
 })
 
 const refreshData = async () => {
@@ -397,6 +425,7 @@ const refreshData = async () => {
 }
 
 .hm-bar--blue { background: var(--blue); }
+.hm-bar--neg  { background: var(--accent); }
 
 </style>
 

@@ -36,15 +36,15 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
+# Create and set ownership for the app directory
+RUN mkdir /app && chown appuser:appuser /app
 WORKDIR /app
 
 # Copy virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder --chown=appuser:appuser /opt/venv /opt/venv
 
 # Copy source code to the runtime stage
-# This is necessary if the project was installed in editable mode or 
-# if the app expects the source to be present in the working directory.
-COPY src/ src/
+COPY --chown=appuser:appuser src/ src/
 
 # Token store directory (mount a volume here for persistence)
 # We set it in a location accessible to the non-root user

@@ -3,6 +3,7 @@ services:
     extends:
       file: docker/services.compose.yml
       service: backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
@@ -12,6 +13,7 @@ services:
     extends:
       file: docker/services.compose.yml
       service: frontend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:

@@ -15,7 +15,7 @@ dev:
 
 dev-backend:
 	@echo "Starting FastAPI backend..."
-	uv run --env-file .env python src/garmin_dashboard/main.py
+	uv run --env-file .env uvicorn garmin_dashboard.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir src
 
 dev-frontend:
 	@echo "Starting Nuxt 4 frontend..."

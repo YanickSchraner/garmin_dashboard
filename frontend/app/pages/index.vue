@@ -82,28 +82,39 @@
 
       <!-- Health Snapshot -->
       <section class="health-panel">
-        <AppCard label="Health" sub-label="2026 TRENDS">
+        <AppCard label="Health" :sub-label="`${currentYear} TRENDS`">
           <div class="health-metrics">
-            <div class="health-metric">
-              <div class="hm-label">RHR IMPROVEMENT</div>
-              <div class="hm-value">
-                <span class="hm-num">-4</span>
-                <span class="hm-unit">BPM</span>
-              </div>
-              <div class="hm-desc">since January 2026</div>
-              <div class="hm-bar"><div class="hm-bar-fill" style="width: 72%"></div></div>
+            <div v-if="snapshotPending" class="health-metric">
+              <AppSkeleton height="80px" />
             </div>
-
-            <div class="hm-separator"></div>
-
-            <div class="health-metric">
-              <div class="hm-label">AVG SLEEP DURATION</div>
-              <div class="hm-value">
-                <span class="hm-num">7h 12m</span>
+            <template v-else>
+              <div class="health-metric">
+                <div class="hm-label">RHR IMPROVEMENT</div>
+                <div class="hm-value">
+                  <span class="hm-num" :class="rhrDelta <= 0 ? 'hm-pos' : 'hm-neg'">
+                    {{ rhrDelta !== null ? (rhrDelta > 0 ? '+' : '') + rhrDelta : '--' }}
+                  </span>
+                  <span class="hm-unit" :class="rhrDelta <= 0 ? 'hm-pos' : 'hm-neg'">BPM</span>
+                </div>
+                <div class="hm-desc">since January {{ currentYear }}</div>
+                <div class="hm-bar">
+                  <div class="hm-bar-fill" :style="{ width: rhrBarPct + '%' }"></div>
+                </div>
               </div>
-              <div class="hm-desc">+18m vs 2025</div>
-              <div class="hm-bar"><div class="hm-bar-fill hm-bar--blue" style="width: 60%"></div></div>
-            </div>
+
+              <div class="hm-separator"></div>
+
+              <div class="health-metric">
+                <div class="hm-label">AVG SLEEP DURATION</div>
+                <div class="hm-value">
+                  <span class="hm-num hm-blue">{{ snapshot?.sleep?.avg_formatted || '--' }}</span>
+                </div>
+                <div class="hm-desc">{{ sleepDeltaDesc }}</div>
+                <div class="hm-bar">
+                  <div class="hm-bar-fill hm-bar--blue" :style="{ width: sleepBarPct + '%' }"></div>
+                </div>
+              </div>
+            </template>
           </div>
         </AppCard>
       </section>
@@ -116,13 +127,18 @@ const apiBase = 'http://localhost:8000'
 
 const { formatDate } = useFormatters()
 
+const now = new Date()
+const currentYear = now.getFullYear()
+const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+const today = now.toISOString().split('T')[0]
+
 const {
   data: goalStatus,
   pending: statusLoading,
   error: statusError,
   refresh: refreshGoal
 } = await useFetch(`${apiBase}/goal-status`, {
-  query: { year: 2026 },
+  query: { year: currentYear },
   immediate: true
 })
 
@@ -132,8 +148,8 @@ const {
   refresh: refreshActivities
 } = await useFetch(`${apiBase}/activities`, {
   query: {
-    start_date: '2026-02-01',
-    end_date: '2026-02-22'
+    start_date: startOfMonth,
+    end_date: today
   },
   immediate: true
 })
@@ -143,6 +159,29 @@ const activityColumns = [
   { accessorKey: 'startTimeLocal', header: 'Date' },
   { accessorKey: 'distance', header: 'Distance' }
 ]
+
+const {
+  data: snapshot,
+  pending: snapshotPending,
+} = await useFetch(`${apiBase}/health-snapshot`, { immediate: true })
+
+const rhrDelta = computed(() => snapshot.value?.rhr?.delta ?? null)
+const rhrBarPct = computed(() => {
+  const d = rhrDelta.value
+  return d !== null ? Math.min(Math.round(Math.abs(d) / 10 * 100), 100) : 0
+})
+const sleepDeltaDesc = computed(() => {
+  const m = snapshot.value?.sleep?.delta_minutes
+  if (m === null || m === undefined) return `vs ${currentYear - 1}`
+  return `${m >= 0 ? '+' : ''}${m}m vs ${currentYear - 1}`
+})
+const sleepBarPct = computed(() => {
+  const fmt = snapshot.value?.sleep?.avg_formatted
+  if (!fmt) return 0
+  const [h, m] = fmt.split('h ').map(parseFloat)
+  const hours = h + (m || 0) / 60
+  return Math.min(Math.round(hours / 8 * 100), 100)
+})
 
 const refreshData = async () => {
   await Promise.all([refreshGoal(), refreshActivities()])
@@ -329,6 +368,10 @@ const refreshData = async () => {
   opacity: 0.7;
   letter-spacing: 0.1em;
 }
+
+.hm-pos { color: var(--green); }
+.hm-neg { color: var(--accent); }
+.hm-blue { color: var(--blue); }
 
 .hm-desc {
   font-family: var(--font-mono);

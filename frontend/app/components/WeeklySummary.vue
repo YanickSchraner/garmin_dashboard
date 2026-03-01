@@ -128,13 +128,13 @@ const distSummary = computed(() => {
 })
 
 const currentWeek = computed(() => {
-  const now = new Date('2026-02-22')
+  const now = new Date()
   const start = new Date(now.getFullYear(), 0, 1)
   return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7)
 })
 
 const weekRange = computed(() => {
-  const now = new Date('2026-02-22')
+  const now = new Date()
   const day = now.getDay()
   const monday = new Date(now)
   monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))

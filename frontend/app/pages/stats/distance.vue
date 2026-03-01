@@ -15,9 +15,7 @@
         <div class="summary-grid">
           <StatBlock label="TOTAL DISTANCE" :value="totalDist.toFixed(1)" unit="km" />
           <div class="stat-divider"></div>
-          <StatBlock label="TARGET" value="30.0" unit="km" />
-          <div class="stat-divider"></div>
-          <StatBlock label="PROGRESS" :value="((totalDist / 30) * 100).toFixed(1)" unit="%" :class="totalDist >= 30 ? 'stat-pos' : ''" />
+          <StatBlock label="VS LAST WEEK" :value="vsLastWeek" :class="vsLastWeek.startsWith('+') ? 'stat-pos' : ''" />
         </div>
       </AppCard>
     </div>
@@ -30,24 +28,18 @@
         </div>
         <div v-else class="chart-container">
           <div class="chart-y-axis">
-            <span>12k</span>
-            <span>10k</span>
-            <span>8k</span>
-            <span>6k</span>
-            <span>4k</span>
-            <span>2k</span>
-            <span>0</span>
+            <span v-for="label in yAxis" :key="label">{{ label }}</span>
           </div>
           <div class="chart-area">
             <div v-for="(day, i) in chartData" :key="i" class="chart-column">
               <div class="bar-group">
-                <div 
-                  class="bar bar--prev" 
-                  :style="{ height: (day.prevDist / 12 * 100) + '%' }"
+                <div
+                  class="bar bar--prev"
+                  :style="{ height: (day.prevDist / chartMax * 100) + '%' }"
                 ></div>
-                <div 
-                  class="bar bar--curr" 
-                  :style="{ height: (day.dist / 12 * 100) + '%' }"
+                <div
+                  class="bar bar--curr"
+                  :style="{ height: (day.dist / chartMax * 100) + '%' }"
                 >
                   <span v-if="day.dist > 0" class="bar-val">{{ day.dist.toFixed(1) }}k</span>
                 </div>
@@ -101,8 +93,26 @@ const chartData = computed(() => {
   }))
 })
 
-const totalDist = computed(() => {
-  return chartData.value.reduce((sum, d) => sum + d.dist, 0)
+const totalDist = computed(() => chartData.value.reduce((sum, d) => sum + d.dist, 0))
+
+const prevTotalDist = computed(() => chartData.value.reduce((sum, d) => sum + d.prevDist, 0))
+
+const vsLastWeek = computed(() => {
+  const diff = totalDist.value - prevTotalDist.value
+  return (diff >= 0 ? '+' : '') + diff.toFixed(1) + 'km'
+})
+
+const chartMax = computed(() => {
+  const maxVal = Math.max(...chartData.value.flatMap(d => [d.dist, d.prevDist]), 0)
+  return Math.max(Math.ceil(maxVal / 5) * 5, 5)
+})
+
+const yAxis = computed(() => {
+  const steps = 6
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const val = chartMax.value / steps * (steps - i)
+    return val === 0 ? '0' : val.toFixed(0) + 'k'
+  })
 })
 </script>
 

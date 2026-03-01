@@ -33,27 +33,22 @@
         </div>
         <div v-else class="chart-container">
           <div class="chart-y-axis">
-            <span>10h</span>
-            <span>8h</span>
-            <span>6h</span>
-            <span>4h</span>
-            <span>2h</span>
-            <span>0h</span>
+            <span v-for="label in yAxis" :key="label">{{ label }}</span>
           </div>
           <div class="chart-area">
             <div v-for="(day, i) in chartData" :key="i" class="chart-column">
               <div class="bar-group">
                 <!-- Previous week shadow bar -->
-                <div 
-                  class="bar bar--prev" 
-                  :style="{ height: (day.prevHours / 10 * 100) + '%' }"
+                <div
+                  class="bar bar--prev"
+                  :style="{ height: (day.prevHours / chartMax * 100) + '%' }"
                 ></div>
                 <!-- Current week bar -->
-                <div 
-                  class="bar bar--curr" 
-                  :style="{ height: (day.hours / 10 * 100) + '%' }"
+                <div
+                  class="bar bar--curr"
+                  :style="{ height: (day.hours / chartMax * 100) + '%' }"
                 >
-                  <span class="bar-val">{{ day.hours.toFixed(1) }}h</span>
+                  <span class="bar-val">{{ fmtHours(day.hours) }}</span>
                 </div>
               </div>
               <div class="day-label">{{ day.label }}</div>
@@ -148,6 +143,25 @@ const vsLastWeek = computed(() => {
   return (diffMin >= 0 ? '+' : '') + diffMin + 'm'
 })
 
+const chartMax = computed(() => {
+  const maxVal = Math.max(...chartData.value.flatMap(d => [d.hours, d.prevHours]), 0)
+  return Math.max(Math.ceil(maxVal), 6)
+})
+
+const yAxis = computed(() => {
+  const steps = 5
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const h = Math.round(chartMax.value / steps * (steps - i))
+    return h === 0 ? '0h' : `${h}h`
+  })
+})
+
+const fmtHours = (h) => {
+  const hours = Math.floor(h)
+  const mins = Math.round((h - hours) * 60)
+  return `${hours}h ${mins}m`
+}
+
 const getRecoveryLabel = (s) => {
   if (!s) return 'Unknown'
   if (s >= 90) return 'Excellent'
@@ -157,7 +171,7 @@ const getRecoveryLabel = (s) => {
 }
 
 const getHrvLabel = (status) => {
-  const map = { BALANCED: 'Balanced', GOOD: 'Good', EXCELLENT: 'Excellent', POOR: 'Poor', UNBALANCED: 'Unbalanced' }
+  const map = { EXCELLENT: 'Excellent', GOOD: 'Good', FAIR: 'Fair', POOR: 'Poor', BALANCED: 'Balanced', UNBALANCED: 'Unbalanced' }
   return map[status] || status
 }
 

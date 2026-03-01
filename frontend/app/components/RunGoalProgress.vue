@@ -137,7 +137,7 @@ const props = defineProps({
   targetToDate: { type: Number, default: 0 },
   percent:      { type: Number, default: 0 },
   status:       { type: String, default: 'behind' },
-  year:         { type: Number, default: 2026 },
+  year:         { type: Number, default: () => new Date().getFullYear() },
   loading:      { type: Boolean, default: false }
 })
 

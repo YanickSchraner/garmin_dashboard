@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     # Personalisation — used as fallback when Garmin API returns no name
     display_name: str = ""
 
+    # Goals
+    annual_run_goal: int = 104
+    weekly_run_goal: int = 2
+
 
 @lru_cache
 def get_settings() -> Settings:
@@ -117,6 +121,15 @@ async def sync_garmin(
     return {"cleared": True}
 
 
+@app.get("/config")
+async def get_config(settings: Settings = Depends(get_settings)):
+    """Return dashboard configuration (goals, targets)."""
+    return {
+        "annual_run_goal": settings.annual_run_goal,
+        "weekly_run_goal": settings.weekly_run_goal,
+    }
+
+
 @app.get("/activities/recent")
 async def get_recent_activities(
     limit: int = Query(25, ge=1, le=100, description="Number of most recent activities to return"),
@@ -190,21 +203,20 @@ async def get_health_stats(
 @app.get("/goal-status")
 async def get_goal_status(
     year: int = Query(datetime.now().year, description="The year to check"),
+    settings: Settings = Depends(get_settings),
     fetcher: GarminFetcher = Depends(get_fetcher),
 ):
-    """Calculate progress toward the 104-run annual goal."""
+    """Calculate progress toward the annual run goal."""
     try:
         start_date = f"{year}-01-01"
         end_date = datetime.now().strftime("%Y-%m-%d") if year == datetime.now().year else f"{year}-12-31"
 
         activities = fetcher.get_activities(start_date, end_date)
 
-        # Filter for runs
         runs = [a for a in activities if a.get("activityType", {}).get("typeKey") == "running"]
         actual_runs = len(runs)
-        goal_runs = 104
+        goal_runs = settings.annual_run_goal
 
-        # Calculate expected runs to date
         total_days = 366 if year % 4 == 0 else 365
         days_passed = (datetime.now() - datetime(year, 1, 1)).days + 1 if year == datetime.now().year else total_days
 
@@ -221,6 +233,53 @@ async def get_goal_status(
     except Exception as e:
         logger.error(f"Error calculating goal status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health-snapshot")
+async def get_health_snapshot(fetcher: GarminFetcher = Depends(get_fetcher)):
+    """Return YTD health trends: RHR improvement since Jan and avg sleep vs last year."""
+    now = datetime.now()
+    year = now.year
+
+    def avg_rhr(dates: list[str]) -> int | None:
+        vals = [
+            rhr_data.get("restingHeartRate")
+            for d in dates
+            if (rhr_data := fetcher.get_rhr_day(d)) and rhr_data.get("restingHeartRate")
+        ]
+        return round(sum(vals) / len(vals)) if vals else None
+
+    def avg_sleep_hours(dates: list[str]) -> float | None:
+        vals = [
+            h for d in dates
+            if (sleep := fetcher.get_sleep_data(d))
+            and (h := sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600) > 0
+        ]
+        return sum(vals) / len(vals) if vals else None
+
+    def fmt_hours(h: float) -> str:
+        return f"{int(h)}h {round((h - int(h)) * 60)}m"
+
+    jan_dates  = [(datetime(year, 1, 6) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+    curr_dates = [(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, 15)]
+    prev_dates = [(now - timedelta(days=365 + i)).strftime("%Y-%m-%d") for i in range(1, 15)]
+
+    jan_rhr   = avg_rhr(jan_dates)
+    curr_rhr  = avg_rhr([(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)])
+    curr_sleep = avg_sleep_hours(curr_dates)
+    prev_sleep = avg_sleep_hours(prev_dates)
+
+    return {
+        "rhr": {
+            "current": curr_rhr,
+            "baseline": jan_rhr,
+            "delta": (curr_rhr - jan_rhr) if jan_rhr and curr_rhr else None,
+        },
+        "sleep": {
+            "avg_formatted": fmt_hours(curr_sleep) if curr_sleep else None,
+            "delta_minutes": round((curr_sleep - prev_sleep) * 60) if curr_sleep and prev_sleep else None,
+        },
+    }
 
 
 @app.get("/stats/weekly")
@@ -269,19 +328,13 @@ async def get_weekly_stats(
                 try:
                     fetched_sleep = fetcher.get_sleep_data(sleep_date)
                     if fetched_sleep:
-                        raw_score = fetched_sleep.get("sleepScores", {}).get("overallScore")
-                        # overallScore is sometimes a plain int, sometimes {"value": N, ...}
-                        if isinstance(raw_score, dict):
-                            score = raw_score.get("value") or 0
-                        else:
-                            score = raw_score or 0
-                        # Newer Garmin firmware omits sleepScores; fall back to bodyBatteryChange
-                        if not score:
-                            score = fetched_sleep.get("bodyBatteryChange") or 0
+                        sleep_scores = fetched_sleep.get("dailySleepDTO", {}).get("sleepScores", {})
+                        # Garmin API returns dailySleepDTO.sleepScores.overall.value
+                        score = (sleep_scores.get("overall") or {}).get("value") or 0
                         sleep_data = {
                             "score": score,
                             "hours": round(fetched_sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds", 0) / 3600, 1),
-                            "hrv_status": fetched_sleep.get("hrvStatus", ""),
+                            "hrv_status": (sleep_scores.get("overall") or {}).get("qualifierKey", ""),
                         }
                 except Exception:
                     logger.warning(f"Could not fetch Sleep for {day_str}")
@@ -304,6 +357,7 @@ async def get_weekly_stats(
                                 weeks[week_name]["zones"][idx] += round(z.get("secsInZone", 0) / 60, 1)
 
                 aerobic_te = max([a.get("aerobicTrainingEffect", 0) for a in day_activities] + [0])
+                anaerobic_te = max([a.get("anaerobicTrainingEffect", 0) for a in day_activities] + [0])
                 intensity = "high" if aerobic_te >= 4 else "medium" if aerobic_te >= 3 else "low" if aerobic_te > 0 else None
 
                 weeks[week_name]["days"].append({
@@ -318,6 +372,7 @@ async def get_weekly_stats(
                     "sleep_hrv_status": sleep_data.get("hrv_status") if sleep_data else "",
                     "training_intensity": intensity,
                     "aerobic_te": aerobic_te,
+                    "anaerobic_te": anaerobic_te,
                 })
 
         return weeks

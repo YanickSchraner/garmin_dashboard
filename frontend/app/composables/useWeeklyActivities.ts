@@ -4,17 +4,9 @@ export const useWeeklyActivities = () => {
   const loading = ref(true)
 
   const getWeekRange = () => {
-    // In a real app, this would be new Date()
-    // For consistency with the session and project context, we use Feb 22, 2026
-    const now = new Date('2026-02-22')
-    const day = now.getDay()
-    const monday = new Date(now)
-    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1))
-    monday.setHours(0, 0, 0, 0)
-    
-    return { 
-      referenceDateStr: '2026-02-22'
-    }
+    const now = new Date()
+    const referenceDateStr = now.toISOString().split('T')[0]
+    return { referenceDateStr }
   }
 
   const fetchActivities = async () => {
@@ -52,6 +44,7 @@ export const useWeeklyActivities = () => {
       sleep_score: day.sleep_score,
       sleep_hrv_status: day.sleep_hrv_status,
       aerobic_te: day.aerobic_te ?? 0,
+      anaerobic_te: day.anaerobic_te ?? 0,
     }))
   })
 

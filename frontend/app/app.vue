@@ -25,7 +25,7 @@
       </main>
 
       <footer class="site-footer">
-        <span>GARMIN DASHBOARD · 2026 · PERSONAL RUNNING COMMAND CENTER</span>
+        <span>GARMIN DASHBOARD · {{ new Date().getFullYear() }} · PERSONAL RUNNING COMMAND CENTER</span>
       </footer>
     </div>
   </UApp>

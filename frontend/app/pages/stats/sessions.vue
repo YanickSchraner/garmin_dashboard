@@ -18,7 +18,7 @@
         <div v-else class="summary-grid">
           <StatBlock label="TOTAL SESSIONS" :value="totalSessions" unit="runs" />
           <div class="stat-divider"></div>
-          <StatBlock label="WEEKLY GOAL" value="3" unit="runs" />
+          <StatBlock label="WEEKLY GOAL" :value="config?.weekly_run_goal ?? 2" unit="runs" />
           <div class="stat-divider"></div>
           <StatBlock label="GOAL STATUS" :value="goalStatus" unit="%" :class="goalStatus >= 100 ? 'stat-pos' : ''" />
         </div>
@@ -75,8 +75,14 @@
               </div>
             </div>
             <div class="load-info">
-              <span class="load-label">AEROBIC EFFECT</span>
-              <span class="load-val">{{ day.te.toFixed(1) }}</span>
+              <div class="te-row">
+                <span class="load-label">AEROBIC</span>
+                <span class="load-val">{{ day.aerobic_te.toFixed(1) }}</span>
+              </div>
+              <div class="te-row">
+                <span class="load-label">ANAEROBIC</span>
+                <span class="load-val load-val--anaerobic">{{ day.anaerobic_te.toFixed(1) }}</span>
+              </div>
             </div>
           </div>
           <div v-if="weeklyData.filter(d => d.session).length === 0" class="empty-list">
@@ -89,7 +95,8 @@
 </template>
 
 <script setup>
-const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities, weeklyStats } = useWeeklyActivities()
+const { activitiesByDay, prevActivitiesByDay, loading, fetchActivities } = useWeeklyActivities()
+const config = useConfig()
 
 onMounted(() => {
   fetchActivities()
@@ -102,7 +109,8 @@ const weeklyData = computed(() => {
     session: day.count > 0,
     prevSession: (prevActivitiesByDay.value[i]?.count || 0) > 0,
     intensity: day.training,
-    te: weeklyStats.value.current[i]?.aerobic_te || 0
+    aerobic_te: day.aerobic_te || 0,
+    anaerobic_te: day.anaerobic_te || 0,
   }))
 })
 
@@ -111,7 +119,7 @@ const totalSessions = computed(() => {
 })
 
 const goalStatus = computed(() => {
-  const goal = 3 // Standard weekly goal
+  const goal = config.value?.weekly_run_goal ?? 2
   const progress = (totalSessions.value / goal) * 100
   return Math.min(100, Math.round(progress))
 })
@@ -297,7 +305,9 @@ const goalStatus = computed(() => {
 .training--medium { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber); }
 .training--low    { background: var(--green-soft); color: var(--green); border: 1px solid var(--green); }
 
-.load-info { display: flex; flex-direction: column; align-items: flex-end; }
+.load-info { display: flex; gap: 16px; }
+.te-row { display: flex; flex-direction: column; align-items: flex-end; }
 .load-label { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
 .load-val { font-family: var(--font-display); font-size: 20px; color: var(--text); }
+.load-val--anaerobic { color: var(--accent); }
 </style>
